@@ -1,0 +1,36 @@
+packet_id,title,priority,domain,estimated_effort,depends_on,gate_coverage,has_tests,has_stop_condition
+PKT-INFRA-001,Provision GPU Training Environment,P0,INFRA,1d,None,,yes,yes
+PKT-INFRA-002,Configure Checkpoint Storage and Versioning,P0,INFRA,4h,PKT-INFRA-001,,yes,yes
+PKT-INFRA-003,Set Up Experiment Tracking and Logging,P1,INFRA,4h,PKT-INFRA-001,,yes,yes
+PKT-INFRA-004,Implement Cost Event Emitter,P0,INFRA,8h,PKT-INFRA-001,,yes,yes
+PKT-INFRA-005,Implement Kill-Switch Controller,P0,INFRA,1d,PKT-INFRA-004,,yes,yes
+PKT-INFRA-006,Implement Auto-Downgrade Controller,P1,INFRA,1d,"PKT-INFRA-004, PKT-INFRA-005",,yes,yes
+PKT-INFRA-007,Deploy Runway and Burn Dashboard,P1,INFRA,1d,"PKT-INFRA-004, PKT-INFRA-005, PKT-INFRA-006",,yes,yes
+PKT-DATA-001,Build Cross-Modal Training Dataset Pipeline,P0,DATA,2d,PKT-INFRA-001,,yes,yes
+PKT-DATA-002,Create Held-Out Evaluation Datasets,P0,DATA,1d,PKT-DATA-001,,yes,yes
+PKT-DATA-003,Create Adversarial and OOD Evaluation Sets,P1,DATA,1d,PKT-DATA-002,,yes,yes
+PKT-DATA-004,Implement Data Contamination Checker,P1,DATA,4h,"PKT-DATA-001, PKT-DATA-002",,yes,yes
+PKT-DATA-005,Implement Data Quality Monitoring,P2,DATA,4h,PKT-DATA-001,,yes,yes
+PKT-TRAIN-001,Implement FSDP Training Loop (T1 Tier),P0,TRAIN,2d,"PKT-INFRA-001, PKT-INFRA-003, PKT-DATA-001",,yes,yes
+PKT-TRAIN-002,Implement DeepSpeed Training Loop (T1/T2 Tiers),P0,TRAIN,1d,PKT-TRAIN-001,,yes,yes
+PKT-TRAIN-003,Implement QLoRA Compressed Training (T3 Tier),P1,TRAIN,1d,PKT-TRAIN-002,,yes,yes
+PKT-TRAIN-004,Implement Pruning Compressed Training (T3 Fallback),P2,TRAIN,1d,PKT-TRAIN-002,,yes,yes
+PKT-TRAIN-005,Execute Baseline Training Run (G1 Target),P0,TRAIN,2d,"PKT-TRAIN-001, PKT-DATA-001, PKT-EVAL-001",G1,yes,yes
+PKT-TRAIN-006,Execute Mid-Tier Training Run (G2 Target),P0,TRAIN,2d,"PKT-TRAIN-005, PKT-EVAL-002",G2,yes,yes
+PKT-EVAL-001,Build Cross-Modal Evaluation Suite,P0,EVAL,1d,PKT-DATA-002,"G1,G2,G3",yes,yes
+PKT-EVAL-002,Build Per-Modality Evaluation Suite,P1,EVAL,4h,PKT-DATA-002,"G2,G3",yes,yes
+PKT-EVAL-003,Build Latency and Performance Benchmark Suite,P0,EVAL,1d,PKT-INFRA-001,G4,yes,yes
+PKT-EVAL-004,Build Safety and Robustness Evaluation Suite,P1,EVAL,1d,PKT-DATA-003,G3,yes,yes
+PKT-EVAL-005,Implement Gate Evaluator,P0,EVAL,8h,"PKT-EVAL-001, PKT-EVAL-002, PKT-EVAL-003, PKT-EVAL-004","G1,G2,G3,G4",yes,yes
+PKT-EVAL-006,Implement Eval Orchestrator,P1,EVAL,8h,"PKT-EVAL-005, PKT-DATA-004",,yes,yes
+PKT-BUDGET-001,Implement Cost-Per-Point Tracker,P1,BUDGET,4h,"PKT-INFRA-004, PKT-EVAL-005",,yes,yes
+PKT-BUDGET-002,Implement Pre-Launch Cost Estimator,P1,BUDGET,4h,PKT-INFRA-004,,yes,yes
+PKT-BUDGET-003,Implement Checkpoint Cost Gates,P2,BUDGET,4h,"PKT-INFRA-004, PKT-BUDGET-001",,yes,yes
+PKT-SAFETY-001,Deploy Safety Classifier,P1,SAFETY,1d,PKT-INFRA-001,G3,yes,yes
+PKT-SAFETY-002,Implement Training Stability Monitors,P1,SAFETY,8h,PKT-TRAIN-001,,yes,yes
+PKT-SAFETY-003,Implement Secret Rotation for Dev Environments,P2,SAFETY,4h,PKT-INFRA-001,,yes,yes
+PKT-OPS-001,Create Training Runbook,P1,OPS,4h,"PKT-TRAIN-001, PKT-TRAIN-002, PKT-EVAL-005",,yes,yes
+PKT-OPS-002,Create Budget Review Runbook,P2,OPS,4h,"PKT-INFRA-007, PKT-BUDGET-001",,yes,yes
+PKT-OPS-003,Configure CI Integration for Eval Harness,P1,OPS,8h,PKT-EVAL-006,,yes,yes
+PKT-OPS-004,Implement Decision Log System,P1,OPS,4h,PKT-INFRA-003,,yes,yes
+PKT-OPS-005,Execute Pilot Readiness Training Run (G3+G4 Target),P0,OPS,2d,"PKT-TRAIN-006, PKT-EVAL-005, PKT-EVAL-003","G3,G4",yes,yes

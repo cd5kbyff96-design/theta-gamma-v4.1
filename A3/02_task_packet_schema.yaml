@@ -1,0 +1,111 @@
+# Task Packet Schema — Theta-Gamma v4.1
+# All compiled packets must conform to this schema.
+# Version: 1.0.0 | Created: 2026-02-26
+
+schema:
+  packet_id:
+    type: string
+    pattern: "PKT-(INFRA|DATA|TRAIN|EVAL|BUDGET|SAFETY|OPS)-\\d{3}"
+    required: true
+    description: Unique packet identifier
+
+  title:
+    type: string
+    required: true
+    max_length: 120
+    description: Short human-readable title
+
+  priority:
+    type: enum
+    values: [P0, P1, P2, P3]
+    required: true
+    description: Execution priority
+
+  domain:
+    type: enum
+    values: [INFRA, DATA, TRAIN, EVAL, BUDGET, SAFETY, OPS]
+    required: true
+
+  estimated_effort:
+    type: string
+    required: true
+    description: "Estimated effort (e.g., '4h', '1d', '2d')"
+
+  depends_on:
+    type: array
+    items:
+      type: string
+      pattern: "PKT-(INFRA|DATA|TRAIN|EVAL|BUDGET|SAFETY|OPS)-\\d{3}"
+    required: false
+    default: []
+    description: Packet IDs that must complete before this packet starts
+
+  source_artifacts:
+    type: array
+    items:
+      type: string
+    required: true
+    description: Phase files this packet was derived from
+
+  objective:
+    type: string
+    required: true
+    description: >
+      Clear, single-sentence statement of what this packet achieves.
+      Must be measurable or verifiable.
+
+  inputs:
+    type: array
+    items:
+      type: string
+    required: true
+    description: >
+      List of artifacts, data, configs, or prerequisites needed to begin.
+
+  commands:
+    type: array
+    items:
+      type: string
+    required: true
+    description: >
+      Ordered list of concrete commands or actions to execute.
+      Each command should be specific enough to run without interpretation.
+
+  tests:
+    type: array
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+          required: true
+        command:
+          type: string
+          required: true
+          description: Command or check that returns pass/fail
+        expected:
+          type: string
+          required: true
+          description: Expected outcome for pass
+    min_items: 1
+    required: true
+    description: Measurable acceptance tests
+
+  done_definition:
+    type: string
+    required: true
+    description: >
+      Unambiguous statement of what "done" looks like.
+      Must be verifiable by a third party without context.
+
+  stop_condition:
+    type: string
+    required: true
+    description: >
+      Condition under which to abort this packet without completing.
+      Prevents runaway execution on blocked or failing tasks.
+
+  notes:
+    type: string
+    required: false
+    description: Optional context, warnings, or implementation hints

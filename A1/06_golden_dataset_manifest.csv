@@ -1,0 +1,14 @@
+dataset_id,source,license,split,hash_sha256,owner,allowed_usage
+DS-CM-BENCH-001,internal_cross_modal_v3,proprietary-internal,eval,a3f7c9e1d42b8f6a50e3d19c7b4a28f6e1d530c9b72e4a81f6d3c950b7e2a14d,ml-eval-team,eval_only — never include in training
+DS-CM-CONSIST-001,internal_consistency_pairs_v2,proprietary-internal,eval,b8d4e2f71a9c3b5d60f4e28a7c5b39g7f2e641d0c83f5b92g7e4d061c8f3b25e,ml-eval-team,eval_only — paired samples for consistency measurement
+DS-CM-RETRIEVAL-001,internal_retrieval_queries_v2,proprietary-internal,eval,c9e5f3a82b0d4c6e71a5f39b8d6c40h8a3f752e1d94a6c03h8f5e172d9a4c36f,ml-eval-team,eval_only — cross-modal retrieval queries and targets
+DS-MOD-TEXT-001,internal_text_eval_v4,proprietary-internal,eval,d0f6a4b93c1e5d7f82b6a40c9e7d51i9b4a863f2e05b7d14i9a6f283e0b5d47a,ml-eval-team,eval_only — text-only classification tasks
+DS-MOD-IMAGE-001,internal_image_eval_v4,CC-BY-4.0,eval,e1a7b5c04d2f6e8a93c7b51d0f8e62j0c5b974a3f16c8e25j0b7a394f1c6e58b,ml-eval-team,eval_only — image-only classification tasks
+DS-MOD-AUDIO-001,internal_audio_eval_v3,proprietary-internal,eval,f2b8c6d15e3a7f9b04d8c62e1a9f73k1d6c085b4a27d9f36k1c8b405a2d7f69c,ml-eval-team,eval_only — audio-only classification tasks
+DS-ADV-ROBUST-001,adversarial_perturbation_set_v2,proprietary-internal,eval,a3c9d7e26f4b8a0c15e9d73f2b0a84l2e7d196c5b38e0a47l2d9c516b3e8a70d,ml-safety-team,eval_only — PGD image attacks and text perturbations
+DS-OOD-INDIST-001,in_distribution_reference_v2,proprietary-internal,eval,b4d0e8f37a5c9b1d26f0e84a3c1b95m3f8e207d6c49f1b58m3e0d627c4f9b81e,ml-safety-team,eval_only — in-distribution reference samples for OOD detection
+DS-OOD-OUT-001,out_of_distribution_v2,mixed-CC-BY-4.0-and-proprietary,eval,c5e1f9a48b6d0c2e37a1f95b4d2c06n4a9f318e7d50a2c69n4f1e738d5a0c92f,ml-safety-team,eval_only — OOD samples from curated external sources
+DS-SAFETY-001,safety_eval_prompts_v3,proprietary-internal,eval,d6f2a0b59c7e1d3f48b2a06c5e3d17o5b0a429f8e61b3d70o5a2f849e6b1d03a,ml-safety-team,eval_only — adversarial and benign prompts for safety classifier
+DS-CALIB-001,calibration_eval_set_v2,proprietary-internal,eval,e7a3b1c60d8f2e4a59c3b17d6f4e28p6c1b530a9f72c4e81p6b3a950f7c2e14b,ml-eval-team,eval_only — calibration assessment samples
+DS-PERF-LOAD-001,load_test_request_corpus_v2,proprietary-internal,eval,f8b4c2d71e9a3f5b60d4c28e7a5f39q7d2c641b0e83f5c92q7c4d061e8a3f25b,ml-infra-team,eval_only — standardized inference request corpus for latency benchmarks
+DS-REG-BASELINE-001,regression_baseline_predictions_v1,proprietary-internal,eval,a9c5d3e82f0b4a6c71e5d39f8a6c40r8e3d752c1f94b6a03r8d5c172f9b4a36c,ml-eval-team,eval_only — baseline model predictions for regression delta computation

@@ -1,0 +1,431 @@
+# Metric Dictionary — Theta-Gamma v4.1 Phase A1
+# Defines all metrics referenced by gate definitions and eval harness.
+# Version: 1.0.0 | Created: 2026-02-26
+
+metrics:
+
+  # ── Cross-Modal Performance ──────────────────────────────────────────
+
+  - id: M-CM-001
+    name: cross_modal_accuracy
+    display_name: Cross-Modal Accuracy
+    description: >
+      Proportion of cross-modal inference tasks where the model produces the
+      correct output given inputs spanning two or more modalities.
+    unit: percent
+    direction: higher_is_better
+    aggregation: mean
+    precision: 2
+    domain: cross_modal
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/cross_modal_accuracy.py
+    tags: [primary, gate_metric, cross_modal]
+
+  - id: M-CM-002
+    name: cross_modal_f1
+    display_name: Cross-Modal F1 Score
+    description: >
+      Harmonic mean of precision and recall on cross-modal tasks,
+      weighted by class frequency.
+    unit: ratio_0_to_1
+    direction: higher_is_better
+    aggregation: weighted_mean
+    precision: 4
+    domain: cross_modal
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/cross_modal_f1.py
+    tags: [secondary, cross_modal]
+
+  - id: M-CM-003
+    name: cross_modal_consistency
+    display_name: Cross-Modal Consistency
+    description: >
+      Measures agreement between model outputs when the same semantic
+      content is presented via different modality combinations.
+    unit: percent
+    direction: higher_is_better
+    aggregation: mean
+    precision: 2
+    domain: cross_modal
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/cross_modal_consistency.py
+    tags: [secondary, cross_modal, robustness]
+
+  - id: M-CM-004
+    name: cross_modal_retrieval_recall_at_k
+    display_name: Cross-Modal Retrieval Recall@K
+    description: >
+      Recall at K (K=10) for cross-modal retrieval tasks — given a query
+      in one modality, retrieve correct items from another modality.
+    unit: ratio_0_to_1
+    direction: higher_is_better
+    aggregation: mean
+    precision: 4
+    domain: cross_modal
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/retrieval_recall_at_k.py
+    tags: [secondary, cross_modal, retrieval]
+
+  # ── Latency & Throughput ─────────────────────────────────────────────
+
+  - id: M-LAT-001
+    name: inference_latency_p50
+    display_name: Inference Latency (p50)
+    description: Median end-to-end inference latency measured at the API boundary.
+    unit: milliseconds
+    direction: lower_is_better
+    aggregation: percentile_50
+    precision: 1
+    domain: performance
+    collection_method: load_test_harness
+    cadence: per_build
+    source: perf_harness/latency_bench.py
+    tags: [primary, gate_metric, latency]
+
+  - id: M-LAT-002
+    name: inference_latency_p95
+    display_name: Inference Latency (p95)
+    description: 95th percentile end-to-end inference latency.
+    unit: milliseconds
+    direction: lower_is_better
+    aggregation: percentile_95
+    precision: 1
+    domain: performance
+    collection_method: load_test_harness
+    cadence: per_build
+    source: perf_harness/latency_bench.py
+    tags: [primary, gate_metric, latency]
+
+  - id: M-LAT-003
+    name: inference_latency_p99
+    display_name: Inference Latency (p99)
+    description: 99th percentile end-to-end inference latency.
+    unit: milliseconds
+    direction: lower_is_better
+    aggregation: percentile_99
+    precision: 1
+    domain: performance
+    collection_method: load_test_harness
+    cadence: per_build
+    source: perf_harness/latency_bench.py
+    tags: [secondary, latency]
+
+  - id: M-THR-001
+    name: throughput_qps
+    display_name: Throughput (QPS)
+    description: Queries per second sustained under standard load profile.
+    unit: queries_per_second
+    direction: higher_is_better
+    aggregation: mean
+    precision: 1
+    domain: performance
+    collection_method: load_test_harness
+    cadence: per_build
+    source: perf_harness/throughput_bench.py
+    tags: [secondary, throughput]
+
+  # ── Model Quality ────────────────────────────────────────────────────
+
+  - id: M-MQ-001
+    name: training_loss
+    display_name: Training Loss
+    description: Final training loss at end of run.
+    unit: nats
+    direction: lower_is_better
+    aggregation: last
+    precision: 6
+    domain: model_quality
+    collection_method: training_logger
+    cadence: per_epoch
+    source: training/loss_logger.py
+    tags: [diagnostic, training]
+
+  - id: M-MQ-002
+    name: validation_loss
+    display_name: Validation Loss
+    description: Loss on held-out validation set.
+    unit: nats
+    direction: lower_is_better
+    aggregation: last
+    precision: 6
+    domain: model_quality
+    collection_method: training_logger
+    cadence: per_epoch
+    source: training/loss_logger.py
+    tags: [primary, training]
+
+  - id: M-MQ-003
+    name: overfitting_gap
+    display_name: Overfitting Gap
+    description: >
+      Difference between validation loss and training loss.
+      Large positive values indicate overfitting.
+    unit: nats
+    direction: lower_is_better
+    aggregation: last
+    precision: 6
+    domain: model_quality
+    collection_method: derived
+    cadence: per_epoch
+    formula: validation_loss - training_loss
+    source: derived
+    tags: [diagnostic, training]
+
+  - id: M-MQ-004
+    name: gradient_norm
+    display_name: Gradient Norm (L2)
+    description: L2 norm of gradients, monitored for training stability.
+    unit: scalar
+    direction: neutral
+    aggregation: mean
+    precision: 4
+    domain: model_quality
+    collection_method: training_logger
+    cadence: per_step
+    source: training/grad_logger.py
+    tags: [diagnostic, stability]
+
+  # ── Per-Modality Accuracy ────────────────────────────────────────────
+
+  - id: M-MOD-001
+    name: text_accuracy
+    display_name: Text-Only Accuracy
+    description: Accuracy on text-only evaluation tasks.
+    unit: percent
+    direction: higher_is_better
+    aggregation: mean
+    precision: 2
+    domain: per_modality
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/text_accuracy.py
+    tags: [secondary, per_modality]
+
+  - id: M-MOD-002
+    name: image_accuracy
+    display_name: Image-Only Accuracy
+    description: Accuracy on image-only evaluation tasks.
+    unit: percent
+    direction: higher_is_better
+    aggregation: mean
+    precision: 2
+    domain: per_modality
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/image_accuracy.py
+    tags: [secondary, per_modality]
+
+  - id: M-MOD-003
+    name: audio_accuracy
+    display_name: Audio-Only Accuracy
+    description: Accuracy on audio-only evaluation tasks.
+    unit: percent
+    direction: higher_is_better
+    aggregation: mean
+    precision: 2
+    domain: per_modality
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/audio_accuracy.py
+    tags: [secondary, per_modality]
+
+  - id: M-MOD-004
+    name: modality_gap_max
+    display_name: Max Modality Gap
+    description: >
+      Largest accuracy difference between any two single-modality evals.
+      Used to detect modality imbalance.
+    unit: percentage_points
+    direction: lower_is_better
+    aggregation: max
+    precision: 2
+    domain: per_modality
+    collection_method: derived
+    cadence: per_training_run
+    formula: max(|text_accuracy - image_accuracy|, |text_accuracy - audio_accuracy|, |image_accuracy - audio_accuracy|)
+    source: derived
+    tags: [diagnostic, per_modality, balance]
+
+  # ── Resource & Cost ──────────────────────────────────────────────────
+
+  - id: M-RES-001
+    name: gpu_memory_peak
+    display_name: Peak GPU Memory
+    description: Peak GPU memory utilization during inference.
+    unit: gigabytes
+    direction: lower_is_better
+    aggregation: max
+    precision: 2
+    domain: resource
+    collection_method: profiler
+    cadence: per_build
+    source: perf_harness/gpu_profiler.py
+    tags: [secondary, resource]
+
+  - id: M-RES-002
+    name: model_size_params
+    display_name: Model Size (Parameters)
+    description: Total parameter count of the model.
+    unit: millions
+    direction: neutral
+    aggregation: snapshot
+    precision: 1
+    domain: resource
+    collection_method: model_inspector
+    cadence: per_checkpoint
+    source: training/model_inspector.py
+    tags: [informational, resource]
+
+  - id: M-RES-003
+    name: training_compute_cost
+    display_name: Training Compute Cost
+    description: Total compute cost for a full training run.
+    unit: usd
+    direction: lower_is_better
+    aggregation: sum
+    precision: 2
+    domain: resource
+    collection_method: cloud_billing
+    cadence: per_training_run
+    source: infra/cost_tracker.py
+    tags: [secondary, cost]
+
+  # ── Robustness & Safety ──────────────────────────────────────────────
+
+  - id: M-ROB-001
+    name: adversarial_robustness
+    display_name: Adversarial Robustness Score
+    description: >
+      Accuracy under adversarial perturbations (PGD attack, epsilon=8/255
+      for image; character-level perturbation for text).
+    unit: percent
+    direction: higher_is_better
+    aggregation: mean
+    precision: 2
+    domain: robustness
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/adversarial_eval.py
+    tags: [secondary, robustness, safety]
+
+  - id: M-ROB-002
+    name: ood_detection_auroc
+    display_name: OOD Detection AUROC
+    description: >
+      Area under ROC curve for out-of-distribution detection.
+      Measures the model's ability to flag inputs outside its training distribution.
+    unit: ratio_0_to_1
+    direction: higher_is_better
+    aggregation: mean
+    precision: 4
+    domain: robustness
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/ood_detection.py
+    tags: [secondary, robustness, safety]
+
+  - id: M-ROB-003
+    name: calibration_ece
+    display_name: Expected Calibration Error
+    description: >
+      Measures how well predicted probabilities match actual outcomes.
+      Lower is better calibrated.
+    unit: ratio_0_to_1
+    direction: lower_is_better
+    aggregation: mean
+    precision: 4
+    domain: robustness
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/calibration.py
+    tags: [secondary, robustness]
+
+  - id: M-SAF-001
+    name: safety_violation_rate
+    display_name: Safety Violation Rate
+    description: >
+      Fraction of inputs that produce outputs flagged by the safety
+      classifier as policy-violating.
+    unit: percent
+    direction: lower_is_better
+    aggregation: mean
+    precision: 4
+    domain: safety
+    collection_method: automated_eval_harness
+    cadence: per_training_run
+    source: eval_harness/safety_classifier.py
+    tags: [primary, safety, gate_metric]
+
+  # ── Data Quality ─────────────────────────────────────────────────────
+
+  - id: M-DQ-001
+    name: data_coverage_modalities
+    display_name: Data Modality Coverage
+    description: >
+      Number of distinct modality pairs present in the training data.
+      Ensures no modality combination is underrepresented.
+    unit: count
+    direction: higher_is_better
+    aggregation: count_distinct
+    precision: 0
+    domain: data_quality
+    collection_method: data_pipeline_stats
+    cadence: per_data_refresh
+    source: data/coverage_checker.py
+    tags: [diagnostic, data_quality]
+
+  - id: M-DQ-002
+    name: data_freshness_days
+    display_name: Data Freshness
+    description: >
+      Age of the most recent data sample in the training set,
+      measured in days from collection to training start.
+    unit: days
+    direction: lower_is_better
+    aggregation: max
+    precision: 0
+    domain: data_quality
+    collection_method: data_pipeline_stats
+    cadence: per_data_refresh
+    source: data/freshness_checker.py
+    tags: [diagnostic, data_quality]
+
+  # ── Regression Detection ─────────────────────────────────────────────
+
+  - id: M-REG-001
+    name: regression_delta_cross_modal
+    display_name: Cross-Modal Regression Delta
+    description: >
+      Change in cross_modal_accuracy compared to the previous checkpoint.
+      Negative values indicate regression.
+    unit: percentage_points
+    direction: higher_is_better
+    aggregation: diff
+    precision: 2
+    domain: regression
+    collection_method: derived
+    formula: cross_modal_accuracy[current] - cross_modal_accuracy[previous]
+    cadence: per_training_run
+    source: derived
+    tags: [diagnostic, regression]
+
+  - id: M-REG-002
+    name: regression_delta_latency
+    display_name: Latency Regression Delta
+    description: >
+      Change in inference_latency_p50 compared to the previous build.
+      Positive values indicate regression (slower).
+    unit: milliseconds
+    direction: lower_is_better
+    aggregation: diff
+    precision: 1
+    domain: regression
+    collection_method: derived
+    formula: inference_latency_p50[current] - inference_latency_p50[previous]
+    cadence: per_build
+    source: derived
+    tags: [diagnostic, regression]

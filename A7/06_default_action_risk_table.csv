@@ -1,0 +1,26 @@
+decision_type,default_action,risk_level,expiry,owner
+pipeline_go_all_conditions_met,"Proceed with generated plan",low,Tuesday 18:00 UTC (weekly),Tech Lead
+pipeline_go_with_watch,"Proceed with watch items active",low,Tuesday 18:00 UTC (weekly),Tech Lead
+pipeline_conditional_go,"Proceed with reduced scope on affected area only",medium,Tuesday 18:00 UTC (weekly),Tech Lead
+pipeline_no_go_s1,"Hold pipeline — do NOT resume until human responds",low,No expiry until response,Tech Lead
+pipeline_no_go_budget,"Hold pipeline at current safe tier",low,Tuesday 18:00 UTC (weekly),Budget Owner
+pipeline_no_go_gate_failure,"Hold pipeline — await human recovery plan",low,Tuesday 18:00 UTC (weekly),Tech Lead
+gate_g1_pass_to_g2,"Proceed to G2 with generated training plan",low,Tuesday 18:00 UTC (weekly),ML Engineer
+gate_g2_pass_to_g3,"Proceed to G3 with generated training plan",low,Tuesday 18:00 UTC (weekly),ML Engineer
+gate_g3_pass_to_pilot,"NO DEFAULT — blocks until human T3 approval",n/a,No expiry — escalate at 48h,Architect
+gate_g4_pass_to_production,"NO DEFAULT — blocks until human T3 approval",n/a,No expiry — escalate at 48h,Architect
+gate_regression_detected,"Roll back to previous known-good checkpoint",medium,Immediate on detection,ML Engineer
+budget_warning_60_80,"Continue at current tier with budget watch item",low,Tuesday 18:00 UTC (weekly),Budget Owner
+budget_critical_80_95,"Downgrade one tier per A2 auto-downgrade rules",medium,4 hours from notification,Budget Owner
+budget_exhausted_95_plus,"Apply T4 eval-only emergency tier",medium,4 hours from notification,Budget Owner
+budget_amendment_request,"Deny amendment — hold at current budget",low,Tuesday 18:00 UTC (weekly),Budget Owner
+kill_switch_tripped,"Apply auto-downgrade per A2 rules",medium,4 hours from notification,Infra Engineer
+s1_third_failure_escalation,"Hold in ESCALATED state — do not retry",low,4 hours from notification,Tech Lead
+s2_escalation,"Apply recommended recovery from retry policy fallback",medium,8 hours from notification,Tech Lead
+rollback_restart_approval,"Hold at rolled-back state — do not restart training",low,24 hours from notification,Tech Lead
+blocker_over_14_days,"Defer blocked packets — continue unblocked work",low,Tuesday 18:00 UTC (weekly),Tech Lead
+post_mortem_approval,"Accept findings — apply corrective actions",medium,Tuesday 18:00 UTC (weekly),Tech Lead
+partner_data_access,"Send follow-up per template — extend wait 7 days",low,Tuesday 18:00 UTC (weekly),Tech Lead
+sow_approval,"Hold — do not send SOW to partner",low,Tuesday 18:00 UTC (weekly),Tech Lead
+architecture_change,"Defer proposal to next week",low,Tuesday 18:00 UTC (weekly),Architect
+new_dependency,"Reject — continue with existing approach",low,Tuesday 18:00 UTC (weekly),Architect

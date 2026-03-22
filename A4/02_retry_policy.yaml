@@ -1,0 +1,459 @@
+# Retry Policy — Theta-Gamma v4.1
+# Defines the three-strike retry cascade: same-path, fallback, escalate.
+# Version: 1.0.0 | Created: 2026-02-26
+
+# ═══════════════════════════════════════════════════════════════
+# Global Policy
+# ═══════════════════════════════════════════════════════════════
+
+global:
+  max_retries_before_escalation: 2  # retry-1 (same path) + retry-2 (fallback) = 2, then escalate
+  third_failure_action: escalate    # MANDATORY — cannot be overridden
+  cooldown_after_recovery_minutes: 15
+  max_concurrent_recoveries_per_resource: 2
+  pipeline_halt_threshold: 3        # halt entire pipeline if 3+ S1 failures concurrent
+
+# ═══════════════════════════════════════════════════════════════
+# Retry Strategy: retry_same_path_once
+# First attempt — use the same configuration with minimal changes.
+# ═══════════════════════════════════════════════════════════════
+
+retry_same_path_once:
+  description: >
+    First retry uses the same approach that failed, with tactical adjustments
+    (revert checkpoint, adjust hyperparameters, restart service). Goal is to
+    resolve transient issues without changing the fundamental approach.
+
+  rules:
+
+    # ── Training Failures ────────────────────────────────────
+    - failure_id: FM-TR-01
+      failure_mode: Loss divergence
+      action: Revert to last stable checkpoint and halve learning rate
+      timeout_hours: 1
+      success_criteria: Training loss decreasing for 50 consecutive steps
+      owner: ML Engineer
+
+    - failure_id: FM-TR-02
+      failure_mode: Validation loss plateau
+      action: Apply learning rate decay schedule (cosine annealing)
+      timeout_hours: 4
+      success_criteria: Validation loss improves within 5 epochs
+      owner: ML Engineer
+
+    - failure_id: FM-TR-03
+      failure_mode: Overfitting
+      action: Increase dropout by 0.1 and weight decay by 2x
+      timeout_hours: 4
+      success_criteria: Overfitting gap stabilizes or decreases over 3 epochs
+      owner: ML Engineer
+
+    - failure_id: FM-TR-04
+      failure_mode: Gradient explosion
+      action: Skip current batch, apply gradient clipping (max_norm=1.0)
+      timeout_hours: 1
+      success_criteria: Gradient norm returns to within 2x running average
+      owner: ML Engineer
+
+    - failure_id: FM-TR-05
+      failure_mode: Gradient vanishing
+      action: Check activation distributions, reinitialize affected layers
+      timeout_hours: 4
+      success_criteria: Gradient norm above 1e-6 sustained for 200 steps
+      owner: ML Engineer
+
+    - failure_id: FM-TR-06
+      failure_mode: NaN/Inf in loss
+      action: Revert checkpoint, enable dynamic loss scaling
+      timeout_hours: 1
+      success_criteria: 100 training steps with finite loss values
+      owner: ML Engineer
+
+    # ── Cross-Modal Failures ─────────────────────────────────
+    - failure_id: FM-CM-01
+      failure_mode: Accuracy regression
+      action: Revert to previous checkpoint, re-run eval to confirm
+      timeout_hours: 4
+      success_criteria: Accuracy returns to within 2pp of pre-regression level
+      owner: ML Engineer
+
+    - failure_id: FM-CM-02
+      failure_mode: Modality imbalance
+      action: Adjust modality sampling ratios to equalize representation
+      timeout_hours: 4
+      success_criteria: Modality gap drops below 15pp within 2 eval runs
+      owner: Data Engineer
+
+    - failure_id: FM-CM-03
+      failure_mode: Consistency collapse
+      action: Halt training, inspect representation space (t-SNE/UMAP)
+      timeout_hours: 1
+      success_criteria: Root cause identified and consistency recovers above 40%
+      owner: ML Engineer
+
+    - failure_id: FM-CM-04
+      failure_mode: Retrieval degradation
+      action: Re-index embeddings, verify index integrity
+      timeout_hours: 24
+      success_criteria: Recall@10 returns to within 0.05 of previous level
+      owner: ML Engineer
+
+    # ── Latency & Performance ────────────────────────────────
+    - failure_id: FM-LT-01
+      failure_mode: Latency spike
+      action: Profile inference path, identify and remove unoptimized ops
+      timeout_hours: 4
+      success_criteria: p95 latency returns below 100ms
+      owner: Infra Engineer
+
+    - failure_id: FM-LT-02
+      failure_mode: Latency regression
+      action: Bisect recent changes to identify regression source
+      timeout_hours: 24
+      success_criteria: Regression source found and latency restored
+      owner: Infra Engineer
+
+    - failure_id: FM-LT-03
+      failure_mode: Throughput collapse
+      action: Check GPU utilization, restart inference server, check for deadlocks
+      timeout_hours: 1
+      success_criteria: QPS recovers above 100
+      owner: Infra Engineer
+
+    - failure_id: FM-LT-04
+      failure_mode: GPU memory overflow
+      action: Reduce inference batch size by 50%
+      timeout_hours: 4
+      success_criteria: Peak GPU memory below 80% of available
+      owner: Infra Engineer
+
+    # ── Safety & Robustness ──────────────────────────────────
+    - failure_id: FM-SF-01
+      failure_mode: Safety violation spike
+      action: Quarantine checkpoint, inspect recent training data additions
+      timeout_hours: 1
+      success_criteria: Violation source identified, rate below 0.5%
+      owner: Safety Engineer
+
+    - failure_id: FM-SF-02
+      failure_mode: Adversarial robustness drop
+      action: Increase adversarial training weight by 2x
+      timeout_hours: 4
+      success_criteria: Robustness recovers above 30% on next eval
+      owner: ML Engineer
+
+    - failure_id: FM-SF-03
+      failure_mode: Calibration degradation
+      action: Re-calibrate with temperature scaling on validation set
+      timeout_hours: 24
+      success_criteria: ECE drops below 0.08
+      owner: ML Engineer
+
+    - failure_id: FM-SF-04
+      failure_mode: OOD detection failure
+      action: Review OOD threshold, adjust confidence scoring
+      timeout_hours: 4
+      success_criteria: AUROC recovers above 0.80
+      owner: ML Engineer
+
+    # ── Data Pipeline ────────────────────────────────────────
+    - failure_id: FM-DP-01
+      failure_mode: Data staleness
+      action: Investigate and restart data ingestion pipeline
+      timeout_hours: 24
+      success_criteria: Fresh data (< 30 days old) available in pipeline
+      owner: Data Engineer
+
+    - failure_id: FM-DP-02
+      failure_mode: Modality coverage drop
+      action: Check per-modality data sources for availability
+      timeout_hours: 24
+      success_criteria: All modality pairs have non-zero coverage
+      owner: Data Engineer
+
+    - failure_id: FM-DP-03
+      failure_mode: Data contamination
+      action: Halt eval, isolate contaminated samples, re-run dedup
+      timeout_hours: 1
+      success_criteria: Zero contamination after dedup pass
+      owner: Data Engineer
+
+    # ── Infrastructure & Budget ──────────────────────────────
+    - failure_id: FM-IF-01
+      failure_mode: Compute cost overrun
+      action: Execute auto-downgrade (D1 or D2) per A2 rules
+      timeout_hours: 4
+      success_criteria: Spend rate drops below daily cap
+      owner: Infra Engineer
+
+    - failure_id: FM-IF-02
+      failure_mode: Checkpoint corruption
+      action: Load previous valid checkpoint, verify integrity
+      timeout_hours: 1
+      success_criteria: Valid checkpoint loaded and training resumable
+      owner: Infra Engineer
+
+    - failure_id: FM-IF-03
+      failure_mode: Kill-switch tripped
+      action: Follow kill-switch specific restart procedure
+      timeout_hours: 1
+      success_criteria: Kill-switch cleared per human approval
+      owner: Infra Engineer
+
+    # ── Gate Failures ────────────────────────────────────────
+    - failure_id: FM-GT-01
+      failure_mode: G1 gate failure
+      action: Continue training with same config for 1 more epoch, re-evaluate
+      timeout_hours: 12
+      success_criteria: G1 criteria met on re-evaluation
+      owner: ML Engineer
+
+    - failure_id: FM-GT-02
+      failure_mode: G2 gate failure
+      action: Continue training with adjusted LR schedule, re-evaluate
+      timeout_hours: 24
+      success_criteria: G2 criteria met on re-evaluation
+      owner: ML Engineer
+
+    - failure_id: FM-GT-03
+      failure_mode: G3 gate failure
+      action: Continue training with full diagnostic, re-evaluate
+      timeout_hours: 48
+      success_criteria: G3 criteria met on re-evaluation
+      owner: ML Engineer
+
+    - failure_id: FM-GT-04
+      failure_mode: G4 gate failure
+      action: Run profiling suite, apply targeted optimizations
+      timeout_hours: 24
+      success_criteria: G4 latency criteria met
+      owner: Infra Engineer
+
+    - failure_id: FM-GT-05
+      failure_mode: 2 consecutive gate failures
+      action: Execute gate-specific rollback per A1 gate definitions
+      timeout_hours: 1
+      success_criteria: Rollback to known-good checkpoint completed
+      owner: ML Engineer
+
+    # ── Delivery Stalls ──────────────────────────────────────
+    - failure_id: FM-DL-01
+      failure_mode: No gate progress for 7 days
+      action: Analyze cost-per-point trends, identify bottleneck
+      timeout_hours: 4
+      success_criteria: Bottleneck identified and mitigation plan created
+      owner: Tech Lead
+
+    - failure_id: FM-DL-02
+      failure_mode: Packet blocked >48h
+      action: Unblock dependency or implement workaround
+      timeout_hours: 4
+      success_criteria: Packet unblocked and work can resume
+      owner: Packet Owner
+
+    - failure_id: FM-DL-03
+      failure_mode: Budget exhausted mid-month
+      action: Switch to T4-Eval-Only mode
+      timeout_hours: 1
+      success_criteria: Eval-only mode active, no further spend
+      owner: Budget Owner
+
+    - failure_id: FM-DL-04
+      failure_mode: Critical path packet fails
+      action: Retry packet with revised approach
+      timeout_hours: 1
+      success_criteria: Packet progresses past failure point
+      owner: Packet Owner
+
+# ═══════════════════════════════════════════════════════════════
+# Retry Strategy: retry_fallback_once
+# Second attempt — switch to an alternative approach.
+# ═══════════════════════════════════════════════════════════════
+
+retry_fallback_once:
+  description: >
+    Second retry switches to the fallback approach. This is a fundamentally
+    different method from the first retry, designed to route around the
+    original failure mode rather than retrying through it.
+
+  rules:
+
+    - failure_id: FM-TR-01
+      action: Revert 2 checkpoints back, halve LR, reduce batch size by 25%
+      timeout_hours: 2
+
+    - failure_id: FM-TR-02
+      action: Switch optimizer from Adam to AdamW, add linear warmup (1000 steps)
+      timeout_hours: 8
+
+    - failure_id: FM-TR-03
+      action: Increase data augmentation aggressively, run contamination checker
+      timeout_hours: 8
+
+    - failure_id: FM-TR-04
+      action: Reduce LR by 75%, switch to fp32 gradient accumulation
+      timeout_hours: 2
+
+    - failure_id: FM-TR-05
+      action: Switch activation function (ReLU→GELU), adjust initialization to He
+      timeout_hours: 8
+
+    - failure_id: FM-TR-06
+      action: Revert 2 checkpoints, switch entire training to fp32
+      timeout_hours: 2
+
+    - failure_id: FM-CM-01
+      action: Revert to best-known checkpoint, analyze data for distribution shift
+      timeout_hours: 8
+
+    - failure_id: FM-CM-02
+      action: Rebalance training data, apply modality-specific learning rates
+      timeout_hours: 8
+
+    - failure_id: FM-CM-03
+      action: Revert to pre-collapse checkpoint, review contrastive loss function
+      timeout_hours: 2
+
+    - failure_id: FM-CM-04
+      action: Retrain embedding projection layer from frozen backbone
+      timeout_hours: 48
+
+    - failure_id: FM-LT-01
+      action: Apply int8 quantization for inference serving
+      timeout_hours: 8
+
+    - failure_id: FM-LT-02
+      action: Revert to last latency-passing build
+      timeout_hours: 48
+
+    - failure_id: FM-LT-03
+      action: Reduce model size (pruning or distillation), add horizontal scaling
+      timeout_hours: 2
+
+    - failure_id: FM-LT-04
+      action: Apply gradient checkpointing and model pruning (20% sparsity)
+      timeout_hours: 8
+
+    - failure_id: FM-SF-01
+      action: Revert to last safe checkpoint, retrain safety head from scratch
+      timeout_hours: 2
+
+    - failure_id: FM-SF-02
+      action: Add stronger PGD adversarial examples, increase augmentation
+      timeout_hours: 8
+
+    - failure_id: FM-SF-03
+      action: Apply Platt scaling on held-out validation set
+      timeout_hours: 48
+
+    - failure_id: FM-SF-04
+      action: Switch to energy-based OOD detection method
+      timeout_hours: 8
+
+    - failure_id: FM-DP-01
+      action: Switch to backup data source
+      timeout_hours: 48
+
+    - failure_id: FM-DP-02
+      action: Backfill from alternative data sources
+      timeout_hours: 48
+
+    - failure_id: FM-DP-03
+      action: Rebuild eval dataset from scratch using new split
+      timeout_hours: 2
+
+    - failure_id: FM-IF-01
+      action: Switch to spot instances at lower tier
+      timeout_hours: 8
+
+    - failure_id: FM-IF-02
+      action: Rebuild from 2nd-most-recent valid checkpoint
+      timeout_hours: 2
+
+    - failure_id: FM-IF-03
+      action: Request budget amendment (T3 human approval)
+      timeout_hours: 2
+
+    - failure_id: FM-GT-01
+      action: Launch hyperparameter sweep (LR, batch size, warmup), pick best
+      timeout_hours: 24
+
+    - failure_id: FM-GT-02
+      action: Revert to G1 checkpoint, create revised training plan with different schedule
+      timeout_hours: 48
+
+    - failure_id: FM-GT-03
+      action: Revert to G2 checkpoint, conduct full architecture review
+      timeout_hours: 96
+
+    - failure_id: FM-GT-04
+      action: Evaluate quantization + pruning + hardware upgrade options
+      timeout_hours: 48
+
+    - failure_id: FM-GT-05
+      action: Full pipeline halt, convene architecture review meeting
+      timeout_hours: 2
+
+    - failure_id: FM-DL-01
+      action: Scope reduction or target adjustment review with stakeholders
+      timeout_hours: 8
+
+    - failure_id: FM-DL-02
+      action: Rescope packet into smaller sub-packets or remove dependency
+      timeout_hours: 8
+
+    - failure_id: FM-DL-03
+      action: Emergency budget amendment request to stakeholders
+      timeout_hours: 2
+
+    - failure_id: FM-DL-04
+      action: Escalate with full blocker report (04_blocker_report_template.md)
+      timeout_hours: 2
+
+# ═══════════════════════════════════════════════════════════════
+# Escalation: escalate_on_third_failure
+# MANDATORY — triggered when both retries fail.
+# ═══════════════════════════════════════════════════════════════
+
+escalate_on_third_failure:
+  description: >
+    MANDATORY escalation on the third consecutive failure. The pipeline is
+    paused, the escalation target from 01_recovery_state_machine.md is
+    notified, and a blocker report is generated. This policy cannot be
+    bypassed, overridden, or deferred.
+
+  mandatory: true
+  override_allowed: false
+
+  actions:
+    - Pause all pipeline activity related to the failure
+    - Generate blocker report using 04_blocker_report_template.md
+    - Notify escalation target (from recovery state machine §3)
+    - Create incident record with full timeline
+    - Schedule post-mortem within 24h of resolution
+    - Document in decision_log.md with escalation flag
+
+  escalation_matrix:
+    S1_failures:
+      escalation_target: Architect + Stakeholders
+      notification_channels: [slack_urgent, email, pagerduty]
+      max_resolution_time: 24h
+      pipeline_state: halted
+
+    S2_failures:
+      escalation_target: Tech Lead
+      notification_channels: [slack_team, email]
+      max_resolution_time: 48h
+      pipeline_state: paused
+
+    S3_failures:
+      escalation_target: Tech Lead
+      notification_channels: [slack_team]
+      max_resolution_time: 72h
+      pipeline_state: degraded_operation
+
+  post_escalation:
+    - Human must explicitly approve resolution before pipeline resumes
+    - Root cause analysis required within 48h
+    - Prevention measure must be documented
+    - Recovery state machine updated if new failure mode discovered

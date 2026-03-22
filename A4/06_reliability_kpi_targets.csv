@@ -1,0 +1,17 @@
+kpi,target,measurement_window,alert_rule,owner
+mean_time_to_detect_minutes,<=15,rolling_7d,"alert if 7d avg > 15 min",Infra Engineer
+mean_time_to_recover_s1_hours,<=4,rolling_30d,"alert if any S1 exceeds 4h or 30d avg > 3h",Tech Lead
+mean_time_to_recover_s2_hours,<=24,rolling_30d,"alert if any S2 exceeds 24h or 30d avg > 16h",Tech Lead
+mean_time_to_recover_s3_hours,<=72,rolling_30d,"alert if any S3 exceeds 72h or 30d avg > 48h",Tech Lead
+sla_compliance_rate_percent,>=95,rolling_30d,"alert if 30d compliance drops below 95%",Tech Lead
+first_retry_success_rate_percent,>=60,rolling_30d,"alert if 30d rate drops below 60%",ML Engineer
+second_retry_success_rate_percent,>=40,rolling_30d,"alert if 30d rate drops below 40% (indicates poor fallback paths)",ML Engineer
+escalation_rate_percent,<=15,rolling_30d,"alert if 30d escalation rate exceeds 15%",Architect
+incidents_per_month_s1,<=3,calendar_month,"alert if S1 count exceeds 3 in any month",Tech Lead
+incidents_per_month_all,<=15,calendar_month,"alert if total incident count exceeds 15 in any month",Tech Lead
+rca_completion_rate_percent,100,rolling_30d,"alert if any required RCA is not completed within 48h",Tech Lead
+corrective_action_closure_rate_percent,>=90,rolling_30d,"alert if open corrective actions exceed 10% of total",Tech Lead
+pipeline_availability_percent,>=95,rolling_7d,"alert if 7d availability drops below 95%",Infra Engineer
+repeat_incident_rate_percent,<=10,rolling_90d,"alert if same FM-XX-NN recurs within 90d at rate > 10%",Architect
+gate_retry_success_rate_percent,>=50,rolling_90d,"alert if gate retries succeed less than 50% over 90d",ML Engineer
+blocker_report_resolution_hours,<=48,rolling_30d,"alert if any blocker report unresolved after 48h",Architect

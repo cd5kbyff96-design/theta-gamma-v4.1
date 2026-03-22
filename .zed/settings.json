@@ -1,0 +1,50 @@
+{
+  "lsp": {
+    "pyright": {
+      "settings": {
+        "python": {
+          "analysis": {
+            "typeCheckingMode": "basic",
+            "useLibraryCodeForTypes": true
+          }
+        }
+      }
+    }
+  },
+  "languages": {
+    "Python": {
+      "language_servers": ["pyright", "ruff"],
+      "formatter": "language_server",
+      "tab_size": 4,
+      "hard_tabs": false,
+      "wrap_columns": 100,
+      "preferred_line_length": 100
+    },
+    "Markdown": {
+      "wrap_columns": 100,
+      "preferred_line_length": 100
+    },
+    "YAML": {
+      "tab_size": 2,
+      "hard_tabs": false
+    }
+  },
+  "tab_size": 4,
+  "hard_tabs": false,
+  "format_on_save": true,
+  "remove_trailing_whitespace_on_save": true,
+  "ensure_final_newline_on_save": true,
+  "show_wrap_guides": true,
+  "wrap_guides": [100],
+  "show_indent_guides": true,
+  "buffer_font_size": 14,
+  "ui_font_size": 14,
+  "theme": {
+    "mode": "dark",
+    "light": "One Light",
+    "dark": "One Dark"
+  },
+  "features": {
+    "inline_completions": true
+  }
+}

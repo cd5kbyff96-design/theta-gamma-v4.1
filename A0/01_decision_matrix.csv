@@ -1,0 +1,71 @@
+decision_class,default_choice,fallback_choice,reversible_yes_no,max_cost_impact_usd,escalation_trigger
+DC-001_file_create,create in project workspace,create in temp dir then move,yes,0,none — T0 auto
+DC-002_file_modify,edit in place with backup,create patch file for manual apply,yes,0,file is outside project workspace
+DC-003_file_delete,soft-delete (move to .trash),skip deletion and log warning,yes,0,file is outside project workspace or in production
+DC-004_dependency_add_patch,install latest patch version,pin to current known-good version,yes,5,package has known CVE or is deprecated
+DC-005_dependency_add_minor,install latest minor version,pin to current known-good version,yes,10,package has known CVE or changelog has breaking notes
+DC-006_dependency_major_upgrade,escalate to human,skip upgrade and log,yes,50,always — T3 required
+DC-007_dependency_remove,uninstall and remove from manifests,comment out and log for review,yes,0,package is used transitively by 3+ other deps
+DC-008_git_branch_create,create from main HEAD,create from latest tag,yes,0,none — T0 auto
+DC-009_git_commit,commit with conventional message,stage changes without committing,yes,0,none — T0 auto
+DC-010_git_push_feature,push to origin feature branch,create local-only branch,yes,0,branch has force-push or rebase pending
+DC-011_git_push_main,escalate to human,skip push and log,no,0,always — T3 required
+DC-012_git_merge_feature,merge via PR with auto-merge,rebase and request review,yes,0,merge conflicts exist or CI failing
+DC-013_git_tag_create,create annotated tag,create lightweight tag,yes,0,tag already exists
+DC-014_pr_open_draft,open draft PR,create local branch only,yes,0,none — T0 auto
+DC-015_pr_open_ready,open ready-for-review PR,open draft PR instead,yes,0,test suite not passing
+DC-016_pr_merge,escalate to human,keep PR open,no,0,always — T3 required
+DC-017_ci_retry,retry failed job (max 2),skip retry and log failure,yes,5,more than 2 retries already attempted
+DC-018_ci_config_modify,update CI config in feature branch,log proposed change for review,yes,0,change affects production pipeline
+DC-019_test_run,run full test suite,run affected tests only,yes,2,test runtime exceeds 30 minutes
+DC-020_test_add,add test file in test directory,add inline test in source file,yes,0,none — T0 auto
+DC-021_test_modify,update test assertions,skip modification and flag for review,yes,0,test covers security-critical path
+DC-022_test_delete,remove test and log rationale,deprecate test with skip annotation,yes,0,test is referenced by other test suites
+DC-023_lint_autofix,apply all safe autofixes,apply formatting-only fixes,yes,0,autofix changes logic or semantics
+DC-024_format_code,apply project formatter,skip formatting,yes,0,none — T0 auto
+DC-025_schema_migrate_dev,run migration on dev DB,generate migration SQL for review,yes,5,migration is destructive (drops column/table)
+DC-026_schema_migrate_staging,escalate to human,generate migration SQL for review,no,20,always — T3 required
+DC-027_schema_migrate_prod,escalate to human,do not execute,no,200,always — T3 required
+DC-028_env_provision_dev,provision ephemeral dev environment,reuse existing dev environment,yes,10,monthly compute cap is above 80%
+DC-029_env_provision_staging,escalate to human,skip provisioning,no,50,always — T3 required
+DC-030_env_teardown_dev,teardown ephemeral dev env after 4h idle,extend idle timeout to 8h,yes,0,environment has uncommitted state
+DC-031_cache_invalidate,invalidate specific cache keys,invalidate all caches,yes,2,cache is shared across services
+DC-032_config_update_dev,update config in dev,log proposed change for review,yes,0,config key affects auth or security
+DC-033_config_update_prod,escalate to human,do not modify,no,0,always — T3 required
+DC-034_doc_generate,generate docs from source,skip doc generation,yes,0,none — T0 auto
+DC-035_doc_publish,escalate to human,generate docs locally only,no,0,always — T3 required
+DC-036_log_level_change_dev,change log level in dev,keep current log level,yes,0,none — T1 log and proceed
+DC-037_secret_rotate_dev,rotate dev/test secrets,skip rotation and alert,yes,0,secret is shared with staging
+DC-038_secret_rotate_prod,escalate to human,do not rotate,no,0,always — T3 required
+DC-039_monitoring_alert_ack,acknowledge informational alerts,escalate to human,yes,0,alert severity is critical or P1
+DC-040_benchmark_run,run benchmarks on dev infra,skip benchmarks,yes,5,benchmark requires production-like data
+DC-041_api_mock_create,create mock in test fixtures,create mock inline,yes,0,none — T0 auto
+DC-042_api_external_integrate,escalate to human,use mock/stub instead,no,50,always — T3 required
+DC-043_feature_flag_dev,toggle flag in dev,skip toggle,yes,0,flag affects user-facing behavior
+DC-044_feature_flag_prod,escalate to human,do not toggle,no,0,always — T3 required
+DC-045_data_seed_dev,seed dev database with fixtures,skip seeding,yes,0,seed data exceeds 1GB
+DC-046_data_delete_dev,delete dev data with confirmation log,soft-delete only,yes,0,data is shared with other dev environments
+DC-047_data_delete_prod,prohibited — never execute,do not execute,no,0,always — T4 prohibited
+DC-048_backup_create,create backup in designated storage,skip backup and log warning,yes,5,storage quota is above 90%
+DC-049_backup_restore_dev,restore from latest dev backup,restore from specific named backup,yes,5,backup is older than 7 days
+DC-050_backup_restore_prod,escalate to human,do not restore,no,100,always — T3 required
+DC-051_container_build,build container image locally,pull pre-built image from registry,yes,2,build context exceeds 5GB
+DC-052_container_push_dev,push to dev registry,tag locally without pushing,yes,2,none — T1 log and proceed
+DC-053_container_push_prod,escalate to human,do not push,no,10,always — T3 required
+DC-054_infra_scale_dev,auto-scale dev resources within limits,maintain current scale,yes,20,scale request exceeds 2x current
+DC-055_infra_scale_prod,escalate to human,do not scale,no,200,always — T3 required
+DC-056_lockfile_update,regenerate lockfile,keep existing lockfile,yes,0,lockfile changes affect 20+ packages
+DC-057_gitignore_update,add entry to .gitignore,log proposed change,yes,0,none — T0 auto
+DC-058_changelog_generate,generate from conventional commits,skip changelog,yes,0,none — T0 auto
+DC-059_license_check,run license audit,skip audit and log,yes,0,new dependency has copyleft license
+DC-060_license_change,escalate to human,do not change,no,0,always — T3 required
+DC-061_archive_stale_branch,archive branches older than 30 days,skip archival,yes,0,branch has open PR
+DC-062_error_retry_transient,retry with exponential backoff (max 3),skip and log error,yes,2,error persists after 3 retries
+DC-063_error_handle_permanent,log error and continue pipeline,halt pipeline and notify,yes,0,error is in critical path
+DC-064_perf_optimize_auto,apply safe perf optimization,skip optimization,yes,0,optimization changes public API
+DC-065_security_scan_run,run security scanner,skip scan and log,yes,2,none — T1 log and proceed
+DC-066_security_vuln_patch,apply patch for non-breaking vuln fix,escalate to human,yes,5,patch is for a critical/high severity CVE
+DC-067_security_config_change,escalate to human,do not change,no,0,always — T3 required
+DC-068_access_control_modify,prohibited — never execute,do not execute,no,0,always — T4 prohibited
+DC-069_notification_internal,send internal team notification,log notification content only,yes,0,notification is project-external
+DC-070_notification_external,prohibited — never execute,do not execute,no,0,always — T4 prohibited

@@ -1,0 +1,527 @@
+# Gate Definitions — Theta-Gamma v4.1 Phase A1
+# Each gate has: metric(s), threshold, window, pass/fail rule, rollback criteria.
+# Version: 1.0.0 | Created: 2026-02-26
+
+gates:
+
+  # ══════════════════════════════════════════════════════════════════════
+  # GATE G1 — Baseline Cross-Modal (40–50%)
+  # Purpose: Validate that the model achieves minimum viable cross-modal
+  #          capability before investing in further training.
+  # ══════════════════════════════════════════════════════════════════════
+
+  - id: G1
+    name: Baseline Cross-Modal Gate
+    phase: baseline
+    description: >
+      Confirms the model has learned meaningful cross-modal representations.
+      Passing this gate unlocks continued training toward the mid-tier target.
+
+    criteria:
+      - metric_id: M-CM-001
+        metric_name: cross_modal_accuracy
+        threshold: 40.0
+        operator: ">="
+        unit: percent
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_accuracy over the last 3 eval runs >= 40%.
+          All 3 runs must individually be >= 35% (floor guard).
+        fail_rule: >
+          FAIL if mean < 40% OR any single run < 35%.
+
+      - metric_id: M-CM-002
+        metric_name: cross_modal_f1
+        threshold: 0.38
+        operator: ">="
+        unit: ratio_0_to_1
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_f1 over the last 3 eval runs >= 0.38.
+        fail_rule: >
+          FAIL if mean < 0.38.
+
+      - metric_id: M-MQ-002
+        metric_name: validation_loss
+        threshold: null
+        operator: decreasing
+        unit: nats
+        window:
+          type: rolling
+          size: 5
+          size_unit: epochs
+        pass_rule: >
+          PASS if validation loss shows a decreasing trend over the last 5
+          epochs (linear regression slope < 0).
+        fail_rule: >
+          FAIL if validation loss is flat or increasing.
+
+    statistical_confidence:
+      method: rolling_window_mean
+      min_samples: 3
+      confidence_level: 0.95
+      requirement: >
+        Mean cross_modal_accuracy over 3 runs must exceed threshold with 95%
+        confidence (one-sided t-test, p < 0.05). Floor guard (each run >= 35%)
+        provides robustness against outlier-driven false passes.
+
+    composite_pass_rule: >
+      Gate G1 passes when ALL criteria pass simultaneously in the same
+      evaluation window AND the statistical confidence requirement is met.
+
+    on_fail:
+      action: block_progression
+      notification: team_channel
+      max_retries: 3
+      retry_cooldown_hours: 12
+
+    rollback:
+      trigger: two_consecutive_failures
+      description: >
+        If G1 fails twice consecutively, rollback to the last checkpoint
+        that showed validation loss improvement. Trigger a hyperparameter
+        review before resuming training.
+      actions:
+        - revert_to_last_improving_checkpoint
+        - log_failure_analysis
+        - open_issue_for_hyperparameter_review
+        - pause_training_pipeline
+
+  # ══════════════════════════════════════════════════════════════════════
+  # GATE G2 — Mid-Tier Cross-Modal (60–70%)
+  # Purpose: Confirm the model has reached competitive cross-modal
+  #          performance suitable for internal testing.
+  # ══════════════════════════════════════════════════════════════════════
+
+  - id: G2
+    name: Mid-Tier Cross-Modal Gate
+    phase: mid
+    description: >
+      Validates that the model achieves strong cross-modal performance
+      and maintains balanced per-modality accuracy. Passing unlocks
+      pilot preparation.
+
+    criteria:
+      - metric_id: M-CM-001
+        metric_name: cross_modal_accuracy
+        threshold: 60.0
+        operator: ">="
+        unit: percent
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_accuracy over the last 3 eval runs >= 60%.
+          All 3 runs must individually be >= 55% (floor guard).
+        fail_rule: >
+          FAIL if mean < 60% OR any single run < 55%.
+
+      - metric_id: M-CM-002
+        metric_name: cross_modal_f1
+        threshold: 0.58
+        operator: ">="
+        unit: ratio_0_to_1
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_f1 over the last 3 eval runs >= 0.58.
+        fail_rule: >
+          FAIL if mean < 0.58.
+
+      - metric_id: M-CM-003
+        metric_name: cross_modal_consistency
+        threshold: 55.0
+        operator: ">="
+        unit: percent
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_consistency >= 55%.
+        fail_rule: >
+          FAIL if mean < 55%.
+
+      - metric_id: M-MOD-004
+        metric_name: modality_gap_max
+        threshold: 15.0
+        operator: "<="
+        unit: percentage_points
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if max modality gap across the last 3 eval runs <= 15pp.
+        fail_rule: >
+          FAIL if any run shows modality gap > 15pp.
+
+      - metric_id: M-ROB-001
+        metric_name: adversarial_robustness
+        threshold: 40.0
+        operator: ">="
+        unit: percent
+        window:
+          type: single
+          size: 1
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if adversarial_robustness >= 40% on latest eval run.
+        fail_rule: >
+          FAIL if adversarial_robustness < 40%.
+
+    statistical_confidence:
+      method: rolling_window_mean
+      min_samples: 3
+      confidence_level: 0.95
+      requirement: >
+        Mean cross_modal_accuracy over 3 runs must exceed 60% with 95%
+        confidence (one-sided t-test, p < 0.05). Floor guard (each run >= 55%)
+        ensures no single weak run inflates the mean. Modality gap check uses
+        worst-case across window (no averaging) for conservative assessment.
+
+    composite_pass_rule: >
+      Gate G2 passes when ALL criteria pass simultaneously AND the statistical
+      confidence requirement is met.
+
+    on_fail:
+      action: block_progression
+      notification: team_channel
+      max_retries: 5
+      retry_cooldown_hours: 24
+
+    rollback:
+      trigger: two_consecutive_failures
+      description: >
+        If G2 fails twice consecutively, analyze which criteria failed.
+        If cross_modal_accuracy is regressing, rollback to the best G1-passing
+        checkpoint and investigate data pipeline or architecture issues.
+        If only modality_gap_max fails, adjust modality sampling ratios.
+      actions:
+        - revert_to_best_checkpoint_above_g1
+        - run_modality_balance_diagnostic
+        - log_failure_analysis
+        - open_issue_for_architecture_review
+        - pause_training_pipeline
+
+  # ══════════════════════════════════════════════════════════════════════
+  # GATE G3 — Pilot Readiness (>=70%)
+  # Purpose: Final quality gate before the model enters pilot deployment.
+  #          Enforces both accuracy and operational readiness.
+  # ══════════════════════════════════════════════════════════════════════
+
+  - id: G3
+    name: Pilot Readiness Gate
+    phase: pilot
+    description: >
+      Comprehensive gate ensuring the model meets accuracy, robustness,
+      safety, and operational requirements for pilot deployment.
+
+    criteria:
+      - metric_id: M-CM-001
+        metric_name: cross_modal_accuracy
+        threshold: 70.0
+        operator: ">="
+        unit: percent
+        window:
+          type: rolling
+          size: 5
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_accuracy over the last 5 eval runs >= 70%.
+          All 5 runs must individually be >= 65% (floor guard).
+          Standard deviation across the 5 runs must be <= 3.0pp (stability).
+        fail_rule: >
+          FAIL if mean < 70% OR any single run < 65% OR stddev > 3.0pp.
+
+      - metric_id: M-CM-002
+        metric_name: cross_modal_f1
+        threshold: 0.68
+        operator: ">="
+        unit: ratio_0_to_1
+        window:
+          type: rolling
+          size: 5
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_f1 over the last 5 eval runs >= 0.68.
+        fail_rule: >
+          FAIL if mean < 0.68.
+
+      - metric_id: M-CM-003
+        metric_name: cross_modal_consistency
+        threshold: 65.0
+        operator: ">="
+        unit: percent
+        window:
+          type: rolling
+          size: 5
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean cross_modal_consistency >= 65%.
+        fail_rule: >
+          FAIL if mean < 65%.
+
+      - metric_id: M-CM-004
+        metric_name: cross_modal_retrieval_recall_at_k
+        threshold: 0.60
+        operator: ">="
+        unit: ratio_0_to_1
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean Recall@10 over the last 3 eval runs >= 0.60.
+        fail_rule: >
+          FAIL if mean < 0.60.
+
+      - metric_id: M-MOD-004
+        metric_name: modality_gap_max
+        threshold: 10.0
+        operator: "<="
+        unit: percentage_points
+        window:
+          type: rolling
+          size: 5
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if max modality gap across the last 5 eval runs <= 10pp.
+        fail_rule: >
+          FAIL if any run shows modality gap > 10pp.
+
+      - metric_id: M-ROB-001
+        metric_name: adversarial_robustness
+        threshold: 50.0
+        operator: ">="
+        unit: percent
+        window:
+          type: single
+          size: 1
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if adversarial_robustness >= 50%.
+        fail_rule: >
+          FAIL if adversarial_robustness < 50%.
+
+      - metric_id: M-ROB-002
+        metric_name: ood_detection_auroc
+        threshold: 0.85
+        operator: ">="
+        unit: ratio_0_to_1
+        window:
+          type: single
+          size: 1
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if OOD detection AUROC >= 0.85.
+        fail_rule: >
+          FAIL if AUROC < 0.85.
+
+      - metric_id: M-ROB-003
+        metric_name: calibration_ece
+        threshold: 0.05
+        operator: "<="
+        unit: ratio_0_to_1
+        window:
+          type: single
+          size: 1
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if ECE <= 0.05.
+        fail_rule: >
+          FAIL if ECE > 0.05.
+
+      - metric_id: M-SAF-001
+        metric_name: safety_violation_rate
+        threshold: 0.1
+        operator: "<="
+        unit: percent
+        window:
+          type: rolling
+          size: 3
+          size_unit: eval_runs
+        pass_rule: >
+          PASS if mean safety_violation_rate over last 3 runs <= 0.1%.
+        fail_rule: >
+          FAIL if mean > 0.1%.
+
+    statistical_confidence:
+      method: rolling_window_mean_with_stability
+      min_samples: 5
+      confidence_level: 0.95
+      requirement: >
+        Mean cross_modal_accuracy over 5 runs must exceed 70% with 95%
+        confidence (one-sided t-test, p < 0.05). Additionally, stddev across
+        the 5 runs must be <= 3.0pp to ensure stability. Floor guard (each
+        run >= 65%) prevents outlier inflation. Safety metrics use a stricter
+        99% confidence interval due to critical impact.
+
+    composite_pass_rule: >
+      Gate G3 passes when ALL criteria pass simultaneously within the
+      same evaluation window, the statistical confidence requirement is met,
+      AND human sign-off is obtained (T3 per autonomy contract).
+
+    on_fail:
+      action: block_progression
+      notification: team_channel_and_stakeholders
+      max_retries: 10
+      retry_cooldown_hours: 48
+
+    rollback:
+      trigger: two_consecutive_failures
+      description: >
+        If G3 fails twice consecutively, perform a comprehensive rollback:
+        revert to the best G2-passing checkpoint, run full diagnostic suite,
+        and convene architecture review before resuming. If safety_violation_rate
+        is the failing criterion, halt all training immediately.
+      actions:
+        - revert_to_best_checkpoint_above_g2
+        - run_full_diagnostic_suite
+        - log_failure_analysis_with_root_cause
+        - open_issue_for_stakeholder_review
+        - halt_training_pipeline
+        - schedule_architecture_review_meeting
+
+  # ══════════════════════════════════════════════════════════════════════
+  # GATE G4 — Inference Latency (<100ms)
+  # Purpose: Ensure the model meets production latency requirements
+  #          before pilot deployment.
+  # ══════════════════════════════════════════════════════════════════════
+
+  - id: G4
+    name: Inference Latency Gate
+    phase: pilot
+    description: >
+      Validates that inference latency meets production SLA requirements.
+      This gate runs in parallel with G3 and both must pass for pilot.
+
+    criteria:
+      - metric_id: M-LAT-001
+        metric_name: inference_latency_p50
+        threshold: 50.0
+        operator: "<="
+        unit: milliseconds
+        window:
+          type: rolling
+          size: 5
+          size_unit: load_test_runs
+        pass_rule: >
+          PASS if mean p50 latency over the last 5 load test runs <= 50ms.
+        fail_rule: >
+          FAIL if mean > 50ms.
+
+      - metric_id: M-LAT-002
+        metric_name: inference_latency_p95
+        threshold: 100.0
+        operator: "<="
+        unit: milliseconds
+        window:
+          type: rolling
+          size: 5
+          size_unit: load_test_runs
+        pass_rule: >
+          PASS if mean p95 latency over the last 5 load test runs <= 100ms.
+          No single run may exceed 120ms (spike guard).
+        fail_rule: >
+          FAIL if mean > 100ms OR any single run > 120ms.
+
+      - metric_id: M-LAT-003
+        metric_name: inference_latency_p99
+        threshold: 200.0
+        operator: "<="
+        unit: milliseconds
+        window:
+          type: rolling
+          size: 5
+          size_unit: load_test_runs
+        pass_rule: >
+          PASS if mean p99 latency over the last 5 load test runs <= 200ms.
+        fail_rule: >
+          FAIL if mean > 200ms.
+
+      - metric_id: M-THR-001
+        metric_name: throughput_qps
+        threshold: 100.0
+        operator: ">="
+        unit: queries_per_second
+        window:
+          type: rolling
+          size: 3
+          size_unit: load_test_runs
+        pass_rule: >
+          PASS if mean throughput over the last 3 load test runs >= 100 QPS.
+        fail_rule: >
+          FAIL if mean < 100 QPS.
+
+      - metric_id: M-RES-001
+        metric_name: gpu_memory_peak
+        threshold: 16.0
+        operator: "<="
+        unit: gigabytes
+        window:
+          type: single
+          size: 1
+          size_unit: load_test_runs
+        pass_rule: >
+          PASS if peak GPU memory <= 16 GB on latest load test.
+        fail_rule: >
+          FAIL if peak GPU memory > 16 GB.
+
+    statistical_confidence:
+      method: rolling_window_mean_with_spike_guard
+      min_samples: 5
+      confidence_level: 0.95
+      requirement: >
+        Mean p95 latency over 5 load test runs must be below 100ms with 95%
+        confidence (one-sided t-test, p < 0.05). Spike guard (no single run
+        > 120ms) prevents intermittent latency spikes from being masked by
+        averaging. Throughput uses 3-run window with same confidence level.
+
+    composite_pass_rule: >
+      Gate G4 passes when ALL criteria pass simultaneously AND the statistical
+      confidence requirement is met.
+
+    on_fail:
+      action: block_progression
+      notification: team_channel
+      max_retries: 5
+      retry_cooldown_hours: 24
+
+    rollback:
+      trigger: two_consecutive_failures
+      description: >
+        If G4 fails twice consecutively, investigate optimization
+        opportunities: quantization, pruning, batching strategy,
+        or hardware scaling. Revert to the last build that passed
+        latency requirements if regression is detected.
+      actions:
+        - revert_to_last_latency_passing_build
+        - run_profiling_suite
+        - log_failure_analysis
+        - open_issue_for_optimization_review
+        - evaluate_quantization_options
+
+# ════════════════════════════════════════════════════════════════════════
+# Gate Progression Map
+# ════════════════════════════════════════════════════════════════════════
+
+progression:
+  order: [G1, G2, G3, G4]
+  dependencies:
+    G2: [G1]
+    G3: [G2]
+    G4: []  # runs independently, but both G3 and G4 needed for pilot
+  pilot_requires: [G3, G4]
+  notes: >
+    G4 (latency) can be evaluated in parallel with G1-G3 progression.
+    However, pilot deployment requires both G3 and G4 to pass.

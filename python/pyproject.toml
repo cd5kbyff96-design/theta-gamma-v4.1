@@ -1,0 +1,134 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "theta-gamma"
+version = "4.1.0"
+description = "Autonomous ML training pipeline with gated milestone progression"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Theta-Gamma Team", email = "theta-gamma@example.com"}
+]
+keywords = [
+    "machine-learning",
+    "mlops",
+    "autonomous-pipeline",
+    "cross-modal",
+    "training"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "rich>=13.0",
+    "structlog>=23.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.1.0",
+    "pre-commit>=3.0",
+]
+eval = [
+    "scikit-learn>=1.0",
+    "torch>=2.0",
+    "ray[train]>=2.0",
+]
+dashboard = [
+    "fastapi>=0.100",
+    "uvicorn>=0.23",
+    "plotly>=5.0",
+]
+distributed = [
+    "ray[train]>=2.0",
+    "torch>=2.0",
+]
+all = [
+    "theta-gamma[dev]",
+    "theta-gamma[eval]",
+    "theta-gamma[dashboard]",
+    "theta-gamma[distributed]",
+]
+
+[project.scripts]
+theta-gamma = "theta_gamma.cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/example/theta-gamma"
+Documentation = "https://theta-gamma.readthedocs.io"
+Repository = "https://github.com/example/theta-gamma"
+
+[tool.setuptools.packages.find]
+where = ["python"]
+include = ["theta_gamma*"]
+
+[tool.pytest.ini_options]
+testpaths = ["theta_gamma/tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = "-v --cov=theta_gamma --cov-report=term-missing"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.coverage.run]
+source = ["theta_gamma"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]

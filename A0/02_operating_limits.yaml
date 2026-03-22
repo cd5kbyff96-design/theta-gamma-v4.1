@@ -1,0 +1,49 @@
+# Operating Limits — Theta-Gamma v4.1
+# These limits bound all autonomous execution.
+# Changes require a contract amendment (see 00_autonomy_contract.md §11).
+
+monthly_compute_cap_usd: 500
+max_parallel_epics: 3
+max_unreviewed_prs: 5
+max_experiment_runtime_hours: 24
+
+# --- Extended Limits ---
+
+# Cost guardrails
+single_action_cost_cap_usd: 50
+daily_compute_cap_usd: 50
+cost_alert_threshold_pct: 80
+
+# CI/CD limits
+max_ci_retries_per_job: 2
+max_ci_parallel_jobs: 4
+max_deploy_frequency_per_day: 0  # 0 = production deploys require manual trigger
+
+# Infrastructure limits
+max_ephemeral_envs: 3
+ephemeral_env_max_lifetime_hours: 8
+max_dev_db_size_gb: 10
+max_container_image_size_gb: 5
+
+# Git limits
+max_open_draft_prs: 10
+stale_branch_archive_after_days: 30
+max_commits_per_push: 50
+
+# Test limits
+max_test_suite_runtime_minutes: 30
+max_benchmark_runtime_minutes: 60
+
+# Data limits
+max_seed_data_size_gb: 1
+max_backup_retention_days: 30
+max_backup_storage_gb: 50
+
+# Rate limits
+max_external_api_calls_per_minute: 60
+max_internal_notifications_per_hour: 20
+
+# Security
+security_scan_frequency: daily
+max_days_unpatched_critical_cve: 1
+max_days_unpatched_high_cve: 7

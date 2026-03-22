@@ -1,0 +1,125 @@
+# Budget Guardrails — Theta-Gamma v4.1
+# Machine-readable guardrails consumed by the training pipeline and cost monitor.
+# Source of truth for thresholds referenced in 01_compute_budget_policy.md
+# and 03_auto_downgrade_rules.md.
+# Version: 1.0.0 | Created: 2026-02-27
+
+# ── Primary Caps ─────────────────────────────────────────────────────────
+monthly_cap_usd: 500
+daily_cap_usd: 50
+single_action_cap_usd: 50
+
+# ── Hard Stops ───────────────────────────────────────────────────────────
+# Hard stops trigger BEFORE breach — they fire at cap, terminating all
+# compute instantly. No autonomous override possible.
+hard_stop_usd:
+  daily: 50       # KS-DAILY: terminates all jobs at $50/day
+  monthly: 500    # KS-MONTHLY: terminates all jobs for remainder of month
+  per_experiment: 50   # KS-RUNAWAY: terminates single experiment at $50
+  per_job_duration_hours: 24  # KS-DURATION: terminates any job exceeding 24h
+
+# ── Alert Thresholds ─────────────────────────────────────────────────────
+# Ordered from least to most severe. Each threshold triggers an action.
+alert_thresholds:
+  daily:
+    - level: info
+      percent: 60
+      usd: 30
+      action: log_to_dashboard
+    - level: warning
+      percent: 80
+      usd: 40
+      action: notify_team_channel
+    - level: critical
+      percent: 96
+      usd: 48
+      action: auto_pause_non_essential
+    - level: kill
+      percent: 100
+      usd: 50
+      action: hard_stop_all_compute
+
+  monthly:
+    - level: info
+      percent: 60
+      usd: 300
+      action: log_to_dashboard
+    - level: warning
+      percent: 80
+      usd: 400
+      action: notify_team_and_trigger_downgrade_eval
+    - level: critical
+      percent: 95
+      usd: 475
+      action: auto_downgrade_to_cheapest_tier
+    - level: kill
+      percent: 100
+      usd: 500
+      action: hard_stop_all_compute_for_month
+
+# ── Auto-Downgrade Order ────────────────────────────────────────────────
+# Ordered list of tiers from highest performance to full stop.
+# Pipeline walks down this list as budget pressure increases.
+auto_downgrade_order:
+  - tier: T1-Full-FSDP
+    trigger_monthly_pct: 0       # default starting tier
+    stack: "PyTorch FSDP + Lightning | 4xA100-80GB"
+    cost_band_usd_per_day: "35-50"
+
+  - tier: T1-Full-DeepSpeed
+    trigger_monthly_pct: 0       # alternative T1 if FSDP issues
+    stack: "DeepSpeed ZeRO-3 + Lightning | 4xA100-80GB"
+    cost_band_usd_per_day: "35-50"
+
+  - tier: T2-Efficient-ZeRO2
+    trigger_monthly_pct: 80
+    stack: "DeepSpeed ZeRO-2 + Lightning | 2xA100-80GB | 75% batch"
+    cost_band_usd_per_day: "20-35"
+
+  - tier: T3-Compressed-QLoRA
+    trigger_monthly_pct: 90
+    stack: "QLoRA 4-bit NF4 + DeepSpeed ZeRO-2 | 1xA100-80GB | 50% batch"
+    cost_band_usd_per_day: "8-20"
+
+  - tier: T3-Compressed-Pruned
+    trigger_monthly_pct: 90      # fallback if QLoRA accuracy drops > 8pp
+    stack: "Magnitude pruning 30% + DeepSpeed ZeRO-2 | 1xA100-80GB | 50% batch"
+    cost_band_usd_per_day: "8-20"
+
+  - tier: T4-Eval-Only
+    trigger_monthly_pct: 95
+    stack: "No training | 1xA100-40GB or A10 | inference only"
+    cost_band_usd_per_day: "2-8"
+
+  - tier: T5-Full-Stop
+    trigger_monthly_pct: 100
+    stack: "No compute"
+    cost_band_usd_per_day: "0"
+
+# ── Cost-per-Point Guardrails ────────────────────────────────────────────
+cost_per_point_thresholds:
+  healthy_max_usd: 15
+  elevated_max_usd: 30
+  unsustainable_trigger: 30     # triggers KS-REGRESSION review
+
+# ── Orphan Compute Guardrails ────────────────────────────────────────────
+orphan_compute:
+  daily_orphan_cap_usd: 20      # KS-ORPHAN threshold
+  action: block_unattributed_jobs
+
+# ── Budget Allocation ────────────────────────────────────────────────────
+budget_allocation:
+  training_pct: 60              # $300/mo
+  eval_pct: 15                  # $75/mo
+  perf_testing_pct: 10          # $50/mo
+  ephemeral_infra_pct: 8        # $40/mo
+  ci_build_pct: 5               # $25/mo
+  reserve_pct: 2                # $10/mo
+
+# ── Experiment Runtime Limits ────────────────────────────────────────────
+experiment_limits:
+  max_runtime_hours: 24
+  checkpoint_cost_gate_intervals:
+    early_exit_pct: 10          # check at 10% of estimated runtime
+    mid_run_pct: 50             # check at 50%
+    late_run_pct: 80            # check at 80%

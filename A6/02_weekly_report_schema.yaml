@@ -1,0 +1,492 @@
+# Weekly Report Schema — Theta-Gamma v4.1
+# STRICT machine-parseable schema. All reports MUST validate against this.
+# Version: 1.0.0 | Created: 2026-02-26
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: ThetaGammaWeeklyReport
+type: object
+required:
+  - report_metadata
+  - milestone_delta
+  - risk_delta
+  - burn_delta
+  - blockers
+  - next_7_days_plan
+  - go_no_go
+additionalProperties: false
+
+properties:
+
+  # ═══════════════════════════════════════════════════════════
+  # Report Metadata
+  # ═══════════════════════════════════════════════════════════
+  report_metadata:
+    type: object
+    required: [report_id, week_number, year, generated_at, period_start, period_end, model_version, schema_version]
+    additionalProperties: false
+    properties:
+      report_id:
+        type: string
+        pattern: "^WR-\\d{4}-W\\d{2}$"
+        description: "Unique report ID, e.g., WR-2026-W09"
+      week_number:
+        type: integer
+        minimum: 1
+        maximum: 53
+      year:
+        type: integer
+      generated_at:
+        type: string
+        format: date-time
+      period_start:
+        type: string
+        format: date
+      period_end:
+        type: string
+        format: date
+      model_version:
+        type: string
+      schema_version:
+        type: string
+        const: "1.0.0"
+
+  # ═══════════════════════════════════════════════════════════
+  # Milestone Delta
+  # ═══════════════════════════════════════════════════════════
+  milestone_delta:
+    type: object
+    required: [current_gate, gates, packets_completed, packets_in_progress, packets_blocked, overall_trajectory]
+    additionalProperties: false
+    properties:
+      current_gate:
+        type: string
+        enum: [pre_g1, g1_in_progress, g1_passed, g2_in_progress, g2_passed, g3_in_progress, g3_passed, g4_in_progress, g4_passed, pilot_ready, pilot_in_progress, pilot_complete]
+      gates:
+        type: array
+        items:
+          type: object
+          required: [gate_id, status, primary_metric_current, primary_metric_previous, delta, threshold, gap_to_threshold]
+          additionalProperties: false
+          properties:
+            gate_id:
+              type: string
+              enum: [G1, G2, G3, G4]
+            status:
+              type: string
+              enum: [not_started, in_progress, passed, failed, blocked]
+            primary_metric_current:
+              type: number
+              description: "Current value of the gate's primary metric"
+            primary_metric_previous:
+              type: number
+              description: "Value from previous week's report"
+            delta:
+              type: number
+              description: "Change from previous week (positive = improvement)"
+            threshold:
+              type: number
+              description: "Gate pass threshold"
+            gap_to_threshold:
+              type: number
+              description: "Distance to threshold (0 or negative = passed)"
+            consecutive_failures:
+              type: integer
+              minimum: 0
+              default: 0
+            estimated_weeks_to_pass:
+              type: ["number", "null"]
+              description: "Weeks until projected pass at current rate. null if passed or no data."
+        minItems: 4
+        maxItems: 4
+      packets_completed:
+        type: array
+        items:
+          type: object
+          required: [packet_id, completed_at]
+          properties:
+            packet_id:
+              type: string
+              pattern: "^PKT-[A-Z]+-\\d{3}$"
+            completed_at:
+              type: string
+              format: date
+      packets_in_progress:
+        type: array
+        items:
+          type: object
+          required: [packet_id, pct_complete, started_at]
+          properties:
+            packet_id:
+              type: string
+              pattern: "^PKT-[A-Z]+-\\d{3}$"
+            pct_complete:
+              type: integer
+              minimum: 0
+              maximum: 100
+            started_at:
+              type: string
+              format: date
+            expected_completion:
+              type: string
+              format: date
+      packets_blocked:
+        type: array
+        items:
+          type: object
+          required: [packet_id, blocked_since, blocking_reason]
+          properties:
+            packet_id:
+              type: string
+              pattern: "^PKT-[A-Z]+-\\d{3}$"
+            blocked_since:
+              type: string
+              format: date
+            blocking_reason:
+              type: string
+            blocking_dependency:
+              type: string
+      overall_trajectory:
+        type: string
+        enum: [on_track, at_risk, off_track]
+
+  # ═══════════════════════════════════════════════════════════
+  # Risk Delta
+  # ═══════════════════════════════════════════════════════════
+  risk_delta:
+    type: object
+    required: [risk_level, risk_level_previous, incidents_opened, incidents_closed, incidents_open, risk_items]
+    additionalProperties: false
+    properties:
+      risk_level:
+        type: string
+        enum: [low, moderate, elevated, high, critical]
+      risk_level_previous:
+        type: string
+        enum: [low, moderate, elevated, high, critical]
+      risk_direction:
+        type: string
+        enum: [improving, stable, worsening]
+      incidents_opened:
+        type: integer
+        minimum: 0
+        description: "New incidents this week"
+      incidents_closed:
+        type: integer
+        minimum: 0
+        description: "Incidents resolved this week"
+      incidents_open:
+        type: integer
+        minimum: 0
+        description: "Total unresolved incidents"
+      s1_open:
+        type: integer
+        minimum: 0
+        default: 0
+      s2_open:
+        type: integer
+        minimum: 0
+        default: 0
+      risk_items:
+        type: array
+        items:
+          type: object
+          required: [risk_id, description, severity, status, owner, mitigation]
+          properties:
+            risk_id:
+              type: string
+            description:
+              type: string
+            severity:
+              type: string
+              enum: [S1, S2, S3, S4]
+            status:
+              type: string
+              enum: [new, open, mitigating, resolved, accepted]
+            owner:
+              type: string
+            mitigation:
+              type: string
+            sla_deadline:
+              type: string
+              format: date-time
+            sla_met:
+              type: ["boolean", "null"]
+
+  # ═══════════════════════════════════════════════════════════
+  # Burn Delta
+  # ═══════════════════════════════════════════════════════════
+  burn_delta:
+    type: object
+    required: [monthly_budget_usd, monthly_spent_usd, monthly_remaining_usd, monthly_pct_used, weekly_spend_usd, weekly_spend_previous_usd, daily_avg_burn_usd, runway_days, current_tier, cost_per_point, budget_health]
+    additionalProperties: false
+    properties:
+      monthly_budget_usd:
+        type: number
+      monthly_spent_usd:
+        type: number
+        minimum: 0
+      monthly_remaining_usd:
+        type: number
+      monthly_pct_used:
+        type: number
+        minimum: 0
+        maximum: 100
+      weekly_spend_usd:
+        type: number
+        minimum: 0
+        description: "Total spend this week"
+      weekly_spend_previous_usd:
+        type: number
+        minimum: 0
+        description: "Total spend last week"
+      weekly_spend_delta_usd:
+        type: number
+        description: "Change in weekly spend (positive = spending more)"
+      daily_avg_burn_usd:
+        type: number
+        minimum: 0
+        description: "7-day average daily burn rate"
+      runway_days:
+        type: number
+        minimum: 0
+        description: "Days of budget remaining at current burn rate"
+      projected_month_end_spend_usd:
+        type: number
+        minimum: 0
+      current_tier:
+        type: string
+        description: "Current training tier (T1-Full-FSDP, T2-Efficient-ZeRO2, etc.)"
+      tier_changes_this_week:
+        type: array
+        items:
+          type: object
+          required: [from_tier, to_tier, direction, timestamp]
+          properties:
+            from_tier:
+              type: string
+            to_tier:
+              type: string
+            direction:
+              type: string
+              enum: [upgrade, downgrade]
+            timestamp:
+              type: string
+              format: date-time
+            reason:
+              type: string
+      cost_per_point:
+        type: object
+        required: [current, historical_avg, health]
+        properties:
+          current:
+            type: ["number", "null"]
+            description: "Current $/pp. null if no gate progress this week."
+          historical_avg:
+            type: ["number", "null"]
+          health:
+            type: string
+            enum: [healthy, elevated, unsustainable, no_data]
+      kill_switches:
+        type: array
+        items:
+          type: object
+          required: [switch_id, status, proximity_pct]
+          properties:
+            switch_id:
+              type: string
+              enum: [KS-DAILY, KS-MONTHLY, KS-RUNAWAY, KS-DURATION, KS-REGRESSION, KS-ORPHAN]
+            status:
+              type: string
+              enum: [armed, tripped, cooldown]
+            proximity_pct:
+              type: number
+              minimum: 0
+              maximum: 100
+            last_tripped:
+              type: ["string", "null"]
+              format: date-time
+      budget_health:
+        type: string
+        enum: [healthy, watch, warning, critical, exhausted]
+
+  # ═══════════════════════════════════════════════════════════
+  # Blockers
+  # ═══════════════════════════════════════════════════════════
+  blockers:
+    type: object
+    required: [count, items]
+    additionalProperties: false
+    properties:
+      count:
+        type: integer
+        minimum: 0
+      items:
+        type: array
+        items:
+          type: object
+          required: [blocker_id, description, severity, blocked_packets, owner, age_days, resolution_plan]
+          additionalProperties: false
+          properties:
+            blocker_id:
+              type: string
+            description:
+              type: string
+            severity:
+              type: string
+              enum: [critical, high, medium]
+            blocked_packets:
+              type: array
+              items:
+                type: string
+                pattern: "^PKT-[A-Z]+-\\d{3}$"
+            owner:
+              type: string
+            age_days:
+              type: integer
+              minimum: 0
+            resolution_plan:
+              type: string
+            escalated:
+              type: boolean
+              default: false
+            blocker_report_id:
+              type: ["string", "null"]
+              description: "BLK-YYYY-MMDD-NNN if escalated"
+
+  # ═══════════════════════════════════════════════════════════
+  # Next 7 Days Plan
+  # ═══════════════════════════════════════════════════════════
+  next_7_days_plan:
+    type: object
+    required: [planned_packets, estimated_cost_usd, planned_tier, success_criteria, watch_items]
+    additionalProperties: false
+    properties:
+      planned_packets:
+        type: array
+        items:
+          type: object
+          required: [packet_id, title, priority, planned_start, planned_end, assigned_to]
+          additionalProperties: false
+          properties:
+            packet_id:
+              type: string
+              pattern: "^PKT-[A-Z]+-\\d{3}$"
+            title:
+              type: string
+            priority:
+              type: string
+              enum: [P0, P1, P2, P3]
+            planned_start:
+              type: string
+              format: date
+            planned_end:
+              type: string
+              format: date
+            assigned_to:
+              type: string
+            dependencies_met:
+              type: boolean
+            estimated_cost_usd:
+              type: number
+              minimum: 0
+        maxItems: 5
+      estimated_cost_usd:
+        type: number
+        minimum: 0
+        description: "Total estimated cost for all planned work this week"
+      cost_fits_budget:
+        type: boolean
+        description: "True if estimated cost fits within remaining monthly budget"
+      planned_tier:
+        type: string
+        description: "Training tier planned for this week"
+      expected_gate_progress:
+        type: string
+        description: "Expected milestone advancement this week"
+      success_criteria:
+        type: array
+        items:
+          type: object
+          required: [criterion, metric, target]
+          properties:
+            criterion:
+              type: string
+            metric:
+              type: string
+            target:
+              type: string
+        minItems: 1
+      watch_items:
+        type: array
+        items:
+          type: object
+          required: [item, metric, threshold, action_if_breached]
+          properties:
+            item:
+              type: string
+            metric:
+              type: string
+            threshold:
+              type: string
+            action_if_breached:
+              type: string
+
+  # ═══════════════════════════════════════════════════════════
+  # Go/No-Go Decision
+  # ═══════════════════════════════════════════════════════════
+  go_no_go:
+    type: object
+    required: [decision, conditions_evaluated, rationale, decided_at]
+    additionalProperties: false
+    properties:
+      decision:
+        type: string
+        enum: [go, go_with_watch, conditional_go, no_go]
+      conditions_evaluated:
+        type: object
+        required: [no_open_s1, no_overdue_s2, budget_below_80, no_kill_switches, no_consecutive_gate_fail, packets_ready]
+        additionalProperties: false
+        properties:
+          no_open_s1:
+            type: boolean
+          no_overdue_s2:
+            type: boolean
+          budget_below_80:
+            type: boolean
+          no_kill_switches:
+            type: boolean
+          no_consecutive_gate_fail:
+            type: boolean
+          packets_ready:
+            type: boolean
+      go_conditions_met:
+        type: integer
+        minimum: 0
+        maximum: 6
+        description: "How many of the 6 go conditions are met"
+      watch_triggers_active:
+        type: array
+        items:
+          type: string
+      conditional_triggers_active:
+        type: array
+        items:
+          type: string
+      no_go_triggers_active:
+        type: array
+        items:
+          type: string
+      rationale:
+        type: string
+        description: "One-sentence explanation of the decision"
+      decided_at:
+        type: string
+        format: date-time
+      decided_by:
+        type: string
+        enum: [automated, tech_lead, architect, stakeholder]
+      human_override:
+        type: boolean
+        default: false
+      override_reason:
+        type: ["string", "null"]

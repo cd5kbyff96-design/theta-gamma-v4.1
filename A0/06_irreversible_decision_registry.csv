@@ -1,0 +1,19 @@
+decision_class,trigger,default_action,requires_human_yes_no,max_impact_scope,reversal_possible
+DC-011_git_push_main,any push to main/production branch,escalate to human,yes,shared repository history — all collaborators affected,no — history rewrite required and may be blocked
+DC-016_pr_merge,any merge of PR into protected branch,escalate to human,yes,codebase main branch — downstream CI/CD triggered,no — merge commit becomes shared history
+DC-026_schema_migrate_staging,schema change on staging database,escalate to human,yes,staging environment — QA and integration testing affected,no — destructive migrations cannot be auto-reversed
+DC-027_schema_migrate_prod,schema change on production database,escalate to human,yes,production environment — all end users affected,no — data loss or corruption risk
+DC-029_env_provision_staging,provisioning staging infrastructure,escalate to human,yes,staging environment — recurring cost commitment,no — may create dependencies and ongoing costs
+DC-033_config_update_prod,any config change in production,escalate to human,yes,production environment — all end users affected,no — config changes may have cascading effects
+DC-035_doc_publish,publishing documentation externally,escalate to human,yes,public-facing — external users and search engines,no — published content is cached and indexed
+DC-038_secret_rotate_prod,rotating production secrets or tokens,escalate to human,yes,production services — may break live integrations,no — old secret invalidated immediately
+DC-042_api_external_integrate,connecting to new third-party API,escalate to human,yes,cross-system — creates external dependency,no — integration may trigger external state changes
+DC-044_feature_flag_prod,toggling feature flag in production,escalate to human,yes,production users — behavior change for end users,no — users may have already interacted with changed behavior
+DC-047_data_delete_prod,any data deletion in production,do not execute — T4 prohibited,yes,production data — permanent loss,no — deleted data cannot be reconstructed
+DC-050_backup_restore_prod,restoring production from backup,escalate to human,yes,production environment — overwrites current state,no — current state is overwritten
+DC-053_container_push_prod,pushing container to production registry,escalate to human,yes,production infrastructure — live services may pull image,no — image may be auto-deployed by orchestrator
+DC-055_infra_scale_prod,scaling production infrastructure,escalate to human,yes,production environment — cost and availability impact,no — downstream services may auto-adjust to new scale
+DC-060_license_change,modifying project or dependency license,escalate to human,yes,legal/compliance — affects all users and contributors,no — legal obligations created by license change
+DC-067_security_config_change,modifying security configuration,escalate to human,yes,security boundary — attack surface modification,no — security state change may expose vulnerabilities
+DC-068_access_control_modify,modifying access controls or IAM,do not execute — T4 prohibited,yes,security boundary — all users and services affected,no — unauthorized access may have already occurred
+DC-070_notification_external,sending external communications,do not execute — T4 prohibited,yes,external recipients — cannot unsend,no — message delivered to external parties
