@@ -214,6 +214,7 @@ class ThetaGammaPipeline:
         self._current_gate: str = "G1"
         self._consecutive_gate_failures: dict[str, int] = {}
         self._last_report: WeeklyReport | None = None
+        self._packets_pending: int = 0
 
     async def initialize(self) -> None:
         """

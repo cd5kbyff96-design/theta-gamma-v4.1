@@ -15,56 +15,56 @@ Core Classes:
 
 from theta_gamma.autonomy.contract import (
     AutonomyContract,
-    DecisionTier,
     DecisionClass,
     DecisionLogEntry,
+    DecisionTier,
     ReversibilityClassification,
-)
-from theta_gamma.autonomy.risk_profile import (
-    RiskAppetiteProfile,
-    RiskDimension,
-    RiskAppetiteLevel,
-    FinancialRiskConfig,
-    DataIntegrityRiskConfig,
-    SecurityRiskConfig,
 )
 from theta_gamma.autonomy.failure_modes import (
     FailureMode,
+    FailureModeImpact,
+    FailureModeLikelihood,
     FailureModeRegistry,
     FailureModeSeverity,
-    FailureModeLikelihood,
-    FailureModeImpact,
 )
 from theta_gamma.autonomy.limits import (
-    OperatingLimits,
     CostAlertThreshold,
-    KillSwitchType,
     KillSwitch,
+    KillSwitchType,
+    OperatingLimits,
+)
+from theta_gamma.autonomy.risk_profile import (
+    DataIntegrityRiskConfig,
+    FinancialRiskConfig,
+    RiskAppetiteLevel,
+    RiskAppetiteProfile,
+    RiskDimension,
+    SecurityRiskConfig,
 )
 
 __all__ = [
     # Contract
     "AutonomyContract",
-    "DecisionTier",
     "DecisionClass",
     "DecisionLogEntry",
+    "DecisionTier",
     "ReversibilityClassification",
-    # Risk Profile
-    "RiskAppetiteProfile",
-    "RiskDimension",
-    "RiskAppetiteLevel",
-    "FinancialRiskConfig",
-    "DataIntegrityRiskConfig",
-    "SecurityRiskConfig",
     # Failure Modes
     "FailureMode",
+    "FailureModeImpact",
+    "FailureModeLikelihood",
     "FailureModeRegistry",
     "FailureModeSeverity",
-    "FailureModeLikelihood",
-    "FailureModeImpact",
     # Limits
-    "OperatingLimits",
     "CostAlertThreshold",
-    "KillSwitchType",
     "KillSwitch",
+    "KillSwitchType",
+    "OperatingLimits",
+    # Risk Profile
+    "DataIntegrityRiskConfig",
+    "FinancialRiskConfig",
+    "RiskAppetiteLevel",
+    "RiskAppetiteProfile",
+    "RiskDimension",
+    "SecurityRiskConfig",
 ]

@@ -82,7 +82,7 @@ Documentation = "https://theta-gamma.readthedocs.io"
 Repository = "https://github.com/example/theta-gamma"
 
 [tool.setuptools.packages.find]
-where = ["python"]
+where = ["."]
 include = ["theta_gamma*"]
 
 [tool.pytest.ini_options]

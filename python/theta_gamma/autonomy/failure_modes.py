@@ -7,7 +7,7 @@ impact assessment, and prescribed mitigation strategies for each mode.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -111,10 +111,7 @@ class FailureMode:
             FailureModeImpact.LOW: 1,
         }
 
-        score = (
-            likelihood_scores.get(self.likelihood, 3)
-            * impact_scores.get(self.impact, 2)
-        )
+        score = likelihood_scores.get(self.likelihood, 3) * impact_scores.get(self.impact, 2)
 
         if score >= 15:
             return "Critical"
@@ -176,9 +173,7 @@ class FailureModeRegistry:
                 detection=(
                     "Cost alert at 80% threshold; daily spend exceeds daily_compute_cap_usd"
                 ),
-                mitigation=(
-                    "Hard circuit-breaker at 100% monthly cap; daily cap enforced"
-                ),
+                mitigation=("Hard circuit-breaker at 100% monthly cap; daily cap enforced"),
                 recovery="Terminate ephemeral resources; review spending log",
                 category="compute",
             ),
@@ -192,15 +187,10 @@ class FailureModeRegistry:
                 likelihood=FailureModeLikelihood.MEDIUM,
                 impact=FailureModeImpact.MEDIUM,
                 detection=(
-                    "Weekly human review of decision log; anomaly detection on "
-                    "decision frequency"
+                    "Weekly human review of decision log; anomaly detection on decision frequency"
                 ),
-                mitigation=(
-                    "Daily automated digest of T1/T2 decisions; weekly pattern review"
-                ),
-                recovery=(
-                    "Revert affected changes via git history; recalibrate decision classes"
-                ),
+                mitigation=("Daily automated digest of T1/T2 decisions; weekly pattern review"),
+                recovery=("Revert affected changes via git history; recalibrate decision classes"),
                 category="autonomy",
             ),
             FailureMode(
@@ -229,9 +219,7 @@ class FailureModeRegistry:
                 ),
                 likelihood=FailureModeLikelihood.MEDIUM,
                 impact=FailureModeImpact.MEDIUM,
-                detection=(
-                    "Ephemeral env lifetime exceeds max lifetime; lock age monitoring"
-                ),
+                detection=("Ephemeral env lifetime exceeds max lifetime; lock age monitoring"),
                 mitigation=(
                     "Hard lifetime cap on ephemeral envs (8h); automatic teardown of "
                     "idle environments (4h)"
@@ -253,8 +241,7 @@ class FailureModeRegistry:
                     "Conservative reversibility definition; explicit irreversible registry"
                 ),
                 recovery=(
-                    "Incident response; update decision matrix to reclassify; "
-                    "contract amendment"
+                    "Incident response; update decision matrix to reclassify; contract amendment"
                 ),
                 category="autonomy",
             ),
@@ -291,16 +278,14 @@ class FailureModeRegistry:
                 likelihood=FailureModeLikelihood.LOW,
                 impact=FailureModeImpact.CRITICAL,
                 detection=(
-                    "Daily security scans; anomalous behavior in tests; unexpected "
-                    "network calls"
+                    "Daily security scans; anomalous behavior in tests; unexpected network calls"
                 ),
                 mitigation=(
                     "Only install from approved registries; lockfile pinning; license "
                     "audit on every change"
                 ),
                 recovery=(
-                    "Revert dependency; rotate any exposed secrets; audit for data "
-                    "exfiltration"
+                    "Revert dependency; rotate any exposed secrets; audit for data exfiltration"
                 ),
                 category="security",
             ),
@@ -322,8 +307,7 @@ class FailureModeRegistry:
                     "testing as supplementary gate"
                 ),
                 recovery=(
-                    "Add targeted regression tests; tighten test review policy for "
-                    "critical paths"
+                    "Add targeted regression tests; tighten test review policy for critical paths"
                 ),
                 category="quality",
             ),
@@ -336,9 +320,7 @@ class FailureModeRegistry:
                 ),
                 likelihood=FailureModeLikelihood.MEDIUM,
                 impact=FailureModeImpact.HIGH,
-                detection=(
-                    "Critical path error trigger; artifact validation checks"
-                ),
+                detection=("Critical path error trigger; artifact validation checks"),
                 mitigation=(
                     "Explicit dependency graph between pipeline stages; critical path "
                     "errors halt pipeline"
@@ -372,9 +354,7 @@ class FailureModeRegistry:
                 ),
                 likelihood=FailureModeLikelihood.LOW,
                 impact=FailureModeImpact.CRITICAL,
-                detection=(
-                    "Secret scanning in CI; pre-commit hooks; audit of generated artifacts"
-                ),
+                detection=("Secret scanning in CI; pre-commit hooks; audit of generated artifacts"),
                 mitigation=(
                     "Secret exposure is T4 prohibited; automated secret scanning; "
                     ".gitignore enforcement"
@@ -391,12 +371,9 @@ class FailureModeRegistry:
                 ),
                 likelihood=FailureModeLikelihood.MEDIUM,
                 impact=FailureModeImpact.MEDIUM,
-                detection=(
-                    "Decision log entry references unknown or improvised class"
-                ),
+                detection=("Decision log entry references unknown or improvised class"),
                 mitigation=(
-                    "Default to highest applicable tier when ambiguous; log ambiguity "
-                    "for review"
+                    "Default to highest applicable tier when ambiguous; log ambiguity for review"
                 ),
                 recovery="Classify and add the new decision class to the matrix; contract amendment",
                 category="autonomy",
@@ -428,9 +405,7 @@ class FailureModeRegistry:
         Returns:
             List of FailureMode instances
         """
-        return [
-            fm for fm in self._failure_modes.values() if fm.category == category
-        ]
+        return [fm for fm in self._failure_modes.values() if fm.category == category]
 
     def get_by_severity(self, severity: FailureModeSeverity) -> list[FailureMode]:
         """
@@ -442,11 +417,7 @@ class FailureModeRegistry:
         Returns:
             List of FailureMode instances
         """
-        return [
-            fm
-            for fm in self._failure_modes.values()
-            if fm.impact == severity
-        ]
+        return [fm for fm in self._failure_modes.values() if fm.impact == severity]
 
     def get_high_risk_modes(self) -> list[FailureMode]:
         """

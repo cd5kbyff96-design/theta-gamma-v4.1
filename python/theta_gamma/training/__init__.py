@@ -14,9 +14,6 @@ from theta_gamma.training.loop import (
     TrainingConfig,
     TrainingMetrics,
     create_model,
-)
-from theta_gamma.training.model import (
-    CrossModalModel,
     ModelConfig,
 )
 from theta_gamma.training.checkpointer import (
@@ -31,15 +28,21 @@ from theta_gamma.training.ray_integration import (
     run_distributed_training,
 )
 
+# CrossModalModel is only available when PyTorch is installed
+try:
+    from theta_gamma.training.loop import CrossModalModel
+except (ImportError, NameError):
+    CrossModalModel = None  # type: ignore
+
 __all__ = [
     # Loop
     "TrainingLoop",
     "TrainingConfig",
     "TrainingMetrics",
     "create_model",
-    # Model
-    "CrossModalModel",
     "ModelConfig",
+    # Model (only when torch available)
+    "CrossModalModel",
     # Checkpointer
     "Checkpointer",
     "CheckpointConfig",

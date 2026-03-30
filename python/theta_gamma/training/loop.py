@@ -193,7 +193,7 @@ class TrainingLoop:
             )
         return "auto"
 
-    async def train(self) -> TrainingMetrics:
+    def train(self) -> TrainingMetrics:
         """
         Run training loop.
 
@@ -331,25 +331,6 @@ class TrainingLoop:
         return self._metrics
 
 
-def create_model(config: ModelConfig | None = None) -> nn.Module:
-    """
-    Create a cross-modal model.
-
-    Args:
-        config: Model configuration
-
-    Returns:
-        PyTorch model
-    """
-    if not TORCH_AVAILABLE:
-        raise ImportError("PyTorch is required")
-
-    if config is None:
-        config = ModelConfig()
-
-    return CrossModalModel(config)
-
-
 @dataclass
 class ModelConfig:
     """Model configuration."""
@@ -363,67 +344,89 @@ class ModelConfig:
     num_modalities: int = 3  # text, image, audio
 
 
-class CrossModalModel(nn.Module):
+if TORCH_AVAILABLE:
+    class CrossModalModel(nn.Module):
+        """
+        Cross-modal transformer model.
+
+        Simple transformer encoder with cross-modal attention.
+        """
+
+        def __init__(self, config: ModelConfig) -> None:
+            """Initialize model."""
+            super().__init__()
+            self._config = config
+
+            # Embeddings
+            self.token_embedding = nn.Embedding(config.vocab_size, config.hidden_size)
+            self.position_embedding = nn.Embedding(
+                config.max_position_embeddings, config.hidden_size
+            )
+
+            # Transformer layers
+            self.layers = nn.ModuleList([
+                nn.TransformerEncoderLayer(
+                    d_model=config.hidden_size,
+                    nhead=config.num_heads,
+                    dim_feedforward=config.intermediate_size,
+                    batch_first=True,
+                )
+                for _ in range(config.num_layers)
+            ])
+
+            # Output projection
+            self.output_projection = nn.Linear(config.hidden_size, config.hidden_size)
+
+        def forward(
+            self,
+            input_ids: torch.Tensor,
+            attention_mask: torch.Tensor | None = None,
+        ) -> torch.Tensor:
+            """
+            Forward pass.
+
+            Args:
+                input_ids: Token IDs [batch, seq_len]
+                attention_mask: Attention mask [batch, seq_len]
+
+            Returns:
+                Hidden states [batch, seq_len, hidden_size]
+            """
+            batch_size, seq_len = input_ids.shape
+
+            # Embeddings
+            token_embeds = self.token_embedding(input_ids)
+            position_ids = torch.arange(seq_len, device=input_ids.device).unsqueeze(0)
+            position_embeds = self.position_embedding(position_ids)
+
+            hidden_states = token_embeds + position_embeds
+
+            # Transformer layers
+            for layer in self.layers:
+                hidden_states = layer(hidden_states, src_key_padding_mask=~attention_mask if attention_mask is not None else None)
+
+            # Output projection
+            output = self.output_projection(hidden_states)
+
+            return output
+
+
+def create_model(config: ModelConfig | None = None) -> nn.Module:
     """
-    Cross-modal transformer model.
+    Create a cross-modal model.
 
-    Simple transformer encoder with cross-modal attention.
+    Args:
+        config: Model configuration
+
+    Returns:
+        PyTorch model
     """
-
-    def __init__(self, config: ModelConfig) -> None:
-        """Initialize model."""
-        super().__init__()
-        self._config = config
-
-        # Embeddings
-        self.token_embedding = nn.Embedding(config.vocab_size, config.hidden_size)
-        self.position_embedding = nn.Embedding(
-            config.max_position_embeddings, config.hidden_size
+    if not TORCH_AVAILABLE:
+        raise ImportError(
+            "PyTorch is required for training. Install with: pip install torch"
         )
 
-        # Transformer layers
-        self.layers = nn.ModuleList([
-            nn.TransformerEncoderLayer(
-                d_model=config.hidden_size,
-                nhead=config.num_heads,
-                dim_feedforward=config.intermediate_size,
-                batch_first=True,
-            )
-            for _ in range(config.num_layers)
-        ])
+    if config is None:
+        config = ModelConfig()
 
-        # Output projection
-        self.output_projection = nn.Linear(config.hidden_size, config.hidden_size)
-
-    def forward(
-        self,
-        input_ids: torch.Tensor,
-        attention_mask: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        """
-        Forward pass.
-
-        Args:
-            input_ids: Token IDs [batch, seq_len]
-            attention_mask: Attention mask [batch, seq_len]
-
-        Returns:
-            Hidden states [batch, seq_len, hidden_size]
-        """
-        batch_size, seq_len = input_ids.shape
-
-        # Embeddings
-        token_embeds = self.token_embedding(input_ids)
-        position_ids = torch.arange(seq_len, device=input_ids.device).unsqueeze(0)
-        position_embeds = self.position_embedding(position_ids)
-
-        hidden_states = token_embeds + position_embeds
-
-        # Transformer layers
-        for layer in self.layers:
-            hidden_states = layer(hidden_states, src_key_padding_mask=~attention_mask if attention_mask is not None else None)
-
-        # Output projection
-        output = self.output_projection(hidden_states)
-
-        return output
+    return CrossModalModel(config)

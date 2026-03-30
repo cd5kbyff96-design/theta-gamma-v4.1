@@ -164,34 +164,39 @@ class Database:
         self,
         query: str,
         params: tuple[Any, ...] = (),
-    ) -> sqlite3.Cursor:
+    ) -> list[sqlite3.Row]:
         """
-        Execute a query and return cursor.
+        Execute a query and return results.
 
         Args:
             query: SQL query
             params: Query parameters
 
         Returns:
-            Cursor with results
+            List of Row results
         """
         with self.connection() as conn:
-            return conn.execute(query, params)
+            cursor = conn.execute(query, params)
+            return cursor.fetchall()
 
     def executemany(
         self,
         query: str,
         params_list: list[tuple[Any, ...]],
-    ) -> None:
+    ) -> int:
         """
         Execute a query with multiple parameter sets.
 
         Args:
             query: SQL query
             params_list: List of parameter tuples
+
+        Returns:
+            Number of rows affected
         """
         with self.connection() as conn:
-            conn.executemany(query, params_list)
+            cursor = conn.executemany(query, params_list)
+            return cursor.rowcount
 
     def fetchone(
         self,

@@ -7,14 +7,14 @@ and logging requirements defined in the autonomy contract specification.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DecisionTier(str, Enum):
@@ -90,8 +90,7 @@ class DecisionClass(BaseModel):
     scope: list[str] = Field(default_factory=list, description="Actions covered")
     examples: list[str] = Field(default_factory=list, description="Concrete examples")
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 
 @dataclass

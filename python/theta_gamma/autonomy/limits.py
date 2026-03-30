@@ -7,10 +7,13 @@ alert thresholds, and kill-switch mechanisms for the Theta-Gamma pipeline.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 
 class KillSwitchType(str, Enum):
@@ -369,12 +372,12 @@ class OperatingLimits:
         }
 
     @classmethod
-    def load_default(cls) -> "OperatingLimits":
+    def load_default(cls) -> OperatingLimits:
         """Load the default operating limits."""
         return cls()
 
     @classmethod
-    def load_from_yaml(cls, path: Path | str) -> "OperatingLimits":
+    def load_from_yaml(cls, path: Path | str) -> OperatingLimits:
         """
         Load operating limits from YAML file.
 

@@ -8,13 +8,12 @@ financial, data integrity, security, availability, and compliance risks.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
 
 
 class RiskAppetiteLevel(str, Enum):
@@ -352,9 +351,7 @@ class RiskAppetiteProfile:
         Returns:
             True if the decision is irreversible
         """
-        return any(
-            d["decision"].lower() in decision.lower() for d in self._irreversible_decisions
-        )
+        return any(d["decision"].lower() in decision.lower() for d in self._irreversible_decisions)
 
     def get_irreversible_tier(self, decision: str) -> str | None:
         """
@@ -445,9 +442,7 @@ class RiskAppetiteProfile:
 
         return cls(
             version=data.get("version", "1.0.0"),
-            overall_posture=RiskAppetiteLevel(
-                data.get("overall_posture", "moderate_conservative")
-            ),
+            overall_posture=RiskAppetiteLevel(data.get("overall_posture", "moderate_conservative")),
             financial=FinancialRiskConfig(**data.get("financial", {})),
             data_integrity=DataIntegrityRiskConfig(**data.get("data_integrity", {})),
             security=SecurityRiskConfig(**data.get("security", {})),

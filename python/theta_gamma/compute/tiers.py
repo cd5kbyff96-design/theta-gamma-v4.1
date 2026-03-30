@@ -40,7 +40,7 @@ class GPUConfig:
     @property
     def total_memory_gb(self) -> int:
         """Total GPU memory in GB."""
-        return self.gpu_count * self.memory_gb
+        return self.count * self.memory_gb
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""

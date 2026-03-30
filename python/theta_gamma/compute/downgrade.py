@@ -7,7 +7,7 @@ costs when budget pressure approaches cap limits.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any, Callable
@@ -439,7 +439,7 @@ class DowngradeCascade:
             if rule.from_tier != current_tier:
                 continue
 
-            all_met, message = rule.check_conditions(context)
+            all_met, _ = rule.check_conditions(context)
             if all_met:
                 transition = TierTransition(
                     direction=TransitionDirection.UPGRADE,
