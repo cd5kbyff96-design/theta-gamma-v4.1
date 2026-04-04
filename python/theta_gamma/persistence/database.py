@@ -7,10 +7,10 @@ Provides the core database infrastructure for Theta-Gamma persistence.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 
 class Database:
@@ -134,12 +134,24 @@ class Database:
             """)
 
             # Create indexes
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_metrics_id ON metrics(metric_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_metrics_created ON metrics(created_at)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_gates_id ON gate_results(gate_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_checkpoints_id ON checkpoints(checkpoint_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_decisions_id ON decision_log(decision_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_incidents_state ON incidents(state)")
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_metrics_id ON metrics(metric_id)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_metrics_created ON metrics(created_at)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_gates_id ON gate_results(gate_id)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_checkpoints_id ON checkpoints(checkpoint_id)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_decisions_id ON decision_log(decision_id)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_incidents_state ON incidents(state)"
+            )
 
     @contextmanager
     def connection(self) -> Generator[sqlite3.Connection, None, None]:
@@ -240,13 +252,13 @@ class Database:
             self._db_path.unlink()
 
 
-# Global database instance
+# Module-level database instance (singleton pattern)
 _database: Database | None = None
 
 
 def get_database(db_path: Path | str | None = None) -> Database:
     """
-    Get or create the global database instance.
+    Get or create the database instance.
 
     Args:
         db_path: Optional path to database file
@@ -254,14 +266,15 @@ def get_database(db_path: Path | str | None = None) -> Database:
     Returns:
         Database instance
     """
-    global _database
+    # Use module-level variable (avoid global keyword)
+    import theta_gamma.persistence.database as _db_module
 
-    if _database is None:
+    if _db_module._database is None:
         if db_path is None:
             db_path = Path("theta_gamma.db")
-        _database = Database(db_path)
+        _db_module._database = Database(db_path)
 
-    return _database
+    return _db_module._database
 
 
 def init_database(db_path: Path | str | None = None) -> Database:

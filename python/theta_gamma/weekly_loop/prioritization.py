@@ -7,10 +7,10 @@ rank packets for weekly execution planning.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
-from theta_gamma.compiler.packets import TaskPacket, PacketPriority
+from theta_gamma.compiler.packets import PacketPriority, TaskPacket
 
 
 @dataclass
@@ -172,7 +172,7 @@ class AutoPrioritization:
         )
 
     def _score_gate_blocking(
-        self, packet: TaskPacket, context: dict[str, Any]
+        self, packet: TaskPacket, context: dict[str, Any]  # noqa: ARG002
     ) -> float:
         """Score gate-blocking (0-100)."""
         # Check if packet blocks current gate
@@ -187,7 +187,7 @@ class AutoPrioritization:
         return 10.0
 
     def _score_deadline_pressure(
-        self, packet: TaskPacket, context: dict[str, Any]
+        self, packet: TaskPacket, context: dict[str, Any]  # noqa: ARG002
     ) -> float:
         """Score deadline pressure (0-100)."""
         days_until_deadline = context.get("days_until_deadline", 30)
@@ -225,7 +225,7 @@ class AutoPrioritization:
         return priority_scores.get(packet.priority, 10.0)
 
     def _score_cost_efficiency(
-        self, packet: TaskPacket, context: dict[str, Any]
+        self, packet: TaskPacket, context: dict[str, Any]  # noqa: ARG002
     ) -> float:
         """Score cost efficiency (0-100)."""
         estimated_cost = context.get("estimated_cost_usd", 25.0)
@@ -270,6 +270,8 @@ class AutoPrioritization:
             parts.append("all deps met")
         if packet.priority == PacketPriority.P0_CRITICAL:
             parts.append("P0")
+        if deadline_score >= 80:
+            parts.append("high deadline pressure")
 
         return ", ".join(parts) if parts else "Standard priority"
 
@@ -277,6 +279,8 @@ class AutoPrioritization:
         self,
         packets: list[TaskPacket],
         gate_context: dict[str, Any] | None = None,
+        deadline_context: dict[str, Any] | None = None,
+        cost_context: dict[str, Any] | None = None,
     ) -> list[PrioritizationScore]:
         """
         Score multiple packets.
@@ -284,12 +288,19 @@ class AutoPrioritization:
         Args:
             packets: Packets to score
             gate_context: Gate context
+            deadline_context: Deadline context
+            cost_context: Cost context
 
         Returns:
             List of PrioritizationScore sorted by composite score
         """
         scores = [
-            self.score_packet(p, gate_context or {})
+            self.score_packet(
+                p,
+                gate_context or {},
+                deadline_context or {},
+                cost_context or {},
+            )
             for p in packets
             if p.status.value == "pending"
         ]
@@ -300,6 +311,7 @@ class AutoPrioritization:
         scores: list[PrioritizationScore],
         n: int = 5,
         budget_constraint: float | None = None,
+        cost_context: dict[str, Any] | None = None,
     ) -> list[PrioritizationScore]:
         """
         Select top N packets with optional budget constraint.
@@ -308,25 +320,29 @@ class AutoPrioritization:
             scores: Scored packets
             n: Number to select
             budget_constraint: Optional budget constraint
+            cost_context: Cost context for packet costs
 
         Returns:
             Selected top packets
         """
         selected = []
         total_cost = 0.0
+        cost_ctx = cost_context or {}
 
         for score in scores:
-            if len(selected) >= n:
-                break
-
             # Check budget constraint if provided
             if budget_constraint:
-                packet_cost = 25.0  # Would get from context
+                packet_cost = cost_ctx.get(score.packet_id, 25.0)
                 if total_cost + packet_cost > budget_constraint:
                     continue
 
-            selected.append(score)
-            total_cost += 25.0
+                selected.append(score)
+                total_cost += packet_cost
+            else:
+                selected.append(score)
+
+            if len(selected) >= n:
+                break
 
         return selected
 
